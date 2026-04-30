@@ -67,6 +67,16 @@ If the Phase 1.5 verdict is `prompt_complete` or `trivial`:
 4. The template-verifier hook fires on the write per `HARNESS.md` §4.6. Correct and re-write if findings.
 5. No clarification batch artifact is produced on these paths.
 
+### Phase 2.5: Reuse hint
+
+If the Phase 1.5 verdict is `standard` or `prompt_complete`:
+
+1. Run the `reuse-hint` skill per `skills/reuse-hint/SKILL.md`. The skill runs in the orchestrator's context; do not invoke a subagent.
+2. The skill applies its own gate (§1) and may return `skipped` or `no_findings` — in which case nothing is appended to the spec and the flow proceeds to Phase 3. Most refactors restructure existing symbols rather than introducing new ones, so the gate will skip; the hint is preserved for refactors that introduce a helper.
+3. On `appended`, the skill's output block is added to the spec's Implementation notes section. Refactor specs do not have a Context section in the template — placement under Implementation notes is the pre-Work reference for the orchestrator. The template-verifier hook fires on the spec re-write.
+
+If the Phase 1.5 verdict is `trivial`: skip Phase 2.5 entirely.
+
 ### Phase 3: Work
 
 1. Emit `Working...` in the session.
@@ -82,19 +92,20 @@ If the Phase 1.5 verdict is `prompt_complete` or `trivial`:
     2. Preserve behavior, interface, and invariants named in the preservation statement.
     3. Do not delete, rename, or weaken existing tests without a decision record.
     4. Update `.claude-wyvrn-local/ARCHITECTURE.md` if the refactor alters architectural elements. The architecture update adds a Change log entry and, if prior entries were edited, a Changes entry.
-6. Apply `DECISIONS.md` §1 classification to every decision. INFERRED → `decision-log` skill.
-7. Every artifact write triggers the template-verifier hook (`hooks/template_verifier.py`) per `HARNESS.md` §4.6.
+6. Before declaring any new public function, class, method, or top-level constant, grep the touched module for symbols with similar names. Prefer reuse over duplication. When a new symbol is necessary, document the reason in the spec's Implementation notes section.
+7. Apply `DECISIONS.md` §1 classification to every decision. INFERRED → `decision-log` skill.
+8. Every artifact write triggers the template-verifier hook (`hooks/template_verifier.py`) per `HARNESS.md` §4.6.
 
 ### Phase 4: Verify
 
 If the Phase 1.5 verdict is `standard` or `prompt_complete`: same orchestration as flow-feature Phase 4 standard/prompt_complete paths. Invokes `run-verifier`. The verifier applies `REFACTOR.md` §5 deltas — preservation verification (baseline comparison), desired-shape verification, architecture consistency.
 
-If the Phase 1.5 verdict is `trivial`: orchestrator runs the verifier-equivalent self-check inline per `HARNESS.md` §10.4 in its own context. Apply every check in `agents/verifier/AGENT.md` Behavior, with the `REFACTOR.md` §5 deltas. Run independent checks in parallel per `HARNESS.md` §11.3 — tests first, then desired-shape + code review + project alignment in parallel, then architecture consistency and out-of-scope findings collection:
+If the Phase 1.5 verdict is `trivial`: orchestrator runs the verifier-equivalent self-check inline per `HARNESS.md` §10.4 in its own context. Apply every check in `agents/verifier/AGENT.md` Behavior, with the `REFACTOR.md` §5 deltas. Run independent checks in parallel per `HARNESS.md` §11.3 — tests first, then desired-shape + code review in parallel, then architecture consistency and out-of-scope findings collection:
 
 - **Preservation verification per `REFACTOR.md` §5.1.** Run the full project test suite. Compare to the baseline recorded during Work. Any test that was passing at baseline and is now failing is a finding. Any test newly deleted without a decision record is a finding.
 - **Desired-shape verification per `REFACTOR.md` §5.2.** Read the spec's desired-shape description and the diff. Verify the diff achieves the described shape. Partial or off-target implementation is a finding.
 - **Architecture consistency per `REFACTOR.md` §5.3.** If ARCHITECTURE.md was updated, check the update for consistency with the diff.
-- **AC verification (refactor flows have no ACs in the feature sense — preservation and desired-shape stand in), code review against `CONVENTIONS.md` and stack files, project alignment per `agents/verifier/AGENT.md` Check 4, out-of-scope findings collection** — all inline.
+- **AC verification (refactor flows have no ACs in the feature sense — preservation and desired-shape stand in), code review against `CONVENTIONS.md` and stack files, out-of-scope findings collection** — all inline.
 
 Write the verifier report at `.claude-wyvrn-local/reviews/REF-NNNN-review.md`. Outcome routing: blocking finding → return to Phase 3 (Work) with the finding as scope, increment cycle. Three-cycle cap per `WORKFLOW.md` §4.4 still applies.
 
@@ -115,4 +126,4 @@ Same as flow-feature.
 
 ## Invokes
 
-Same set as flow-feature, with the same `triviality-detector`-driven gating: `triviality-detector` always runs; `run-clarifier`/`clarifier` only on `standard` verdict; `run-verifier`/`verifier`/`code-reviewer` on `standard` and `prompt_complete` verdicts but not on `trivial`. The template-verifier hook always fires on artifact writes.
+Same set as flow-feature, with the same `triviality-detector`-driven gating: `triviality-detector` always runs; `run-clarifier`/`clarifier` only on `standard` verdict; `reuse-hint` on `standard` and `prompt_complete` verdicts but not on `trivial` (further gated by the skill's own §1); `run-verifier`/`verifier`/`code-reviewer` on `standard` and `prompt_complete` verdicts but not on `trivial`. The template-verifier hook always fires on artifact writes.

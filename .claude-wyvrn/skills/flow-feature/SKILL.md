@@ -74,18 +74,29 @@ If the Phase 1.5 verdict is `prompt_complete` or `trivial`:
 4. The template-verifier hook fires on the write per `HARNESS.md` §4.6. Correct and re-write if findings.
 5. No clarification batch artifact is produced on these paths.
 
+### Phase 2.5: Reuse hint
+
+If the Phase 1.5 verdict is `standard` or `prompt_complete`:
+
+1. Run the `reuse-hint` skill per `skills/reuse-hint/SKILL.md`. The skill runs in the orchestrator's context; do not invoke a subagent.
+2. The skill applies its own gate (§1) and may return `skipped` or `no_findings` — in which case nothing is appended to the spec and the flow proceeds to Phase 3.
+3. On `appended`, the skill's output block is added to the spec's Context section. The template-verifier hook fires on the spec re-write.
+
+If the Phase 1.5 verdict is `trivial`: skip Phase 2.5 entirely. The trivial-flow gate already excludes new public symbols, so the hint has nothing to surface.
+
 ### Phase 3: Work
 
 1. Emit `Working...` in the session.
 2. Read the spec artifact, and the clarification batch when it exists (standard path only).
 3. Read stack-specific conventions per `CONVENTIONS.md` §1.3 as files are touched.
 4. Implement the feature per the spec's acceptance criteria.
-5. Apply `DECISIONS.md` §1 classification to every decision encountered:
+5. Before declaring any new public function, class, method, or top-level constant, grep the touched module for symbols with similar names. Prefer reuse over duplication. When a new symbol is necessary, document the reason in the spec's Implementation notes section (e.g., signature differs, behavior diverges, existing symbol belongs to a retired module).
+6. Apply `DECISIONS.md` §1 classification to every decision encountered:
     - SPEC-DEFINED → act.
     - INFERRED → act, invoke `decision-log` skill.
     - UNDECIDED or CONTRADICTION → halt, file a late clarification per `HARNESS.md` §5.4.
-6. Write new tests covering every acceptance criterion per `CONVENTIONS.md` §2.6.
-7. Every artifact write triggers the template-verifier hook (`hooks/template_verifier.py`) per `HARNESS.md` §4.6.
+7. Write new tests covering every acceptance criterion per `CONVENTIONS.md` §2.6.
+8. Every artifact write triggers the template-verifier hook (`hooks/template_verifier.py`) per `HARNESS.md` §4.6.
 
 ### Phase 4: Verify
 
@@ -101,11 +112,10 @@ If the Phase 1.5 verdict is `standard` or `prompt_complete`:
 If the Phase 1.5 verdict is `trivial`:
 
 1. Emit `Verifying...` in the session.
-2. Do not invoke `run-verifier`. Do not invoke `verifier` or `code-reviewer` subagents. Run the verifier-equivalent self-check inline per `HARNESS.md` §10.4, in the orchestrator's context, applying every check in `agents/verifier/AGENT.md` Behavior. Run independent checks in parallel per `HARNESS.md` §11.3 — tests first, then AC verification + code review + project alignment in parallel, then out-of-scope findings collection:
+2. Do not invoke `run-verifier`. Do not invoke `verifier` or `code-reviewer` subagents. Run the verifier-equivalent self-check inline per `HARNESS.md` §10.4, in the orchestrator's context, applying every check in `agents/verifier/AGENT.md` Behavior. Run independent checks in parallel per `HARNESS.md` §11.3 — tests first, then AC verification + code review in parallel, then out-of-scope findings collection:
     - **Test execution.** Run tests per `FEATURE.md` §5.2. Record results.
     - **AC verification.** For each acceptance criterion in the spec, locate the test or artifact that satisfies it. Confirm.
     - **Code review.** Re-read the diff against `CONVENTIONS.md` §2-3 and any stack-specific files matched in Phase 3. Look for blocking convention violations.
-    - **Project alignment.** Per `agents/verifier/AGENT.md` Check 4. Trivial flows excluded new public symbols at the gate, so this check is mostly trivial; confirm.
     - **Out-of-scope findings.** Collect any issues outside scope per `DECISIONS.md` §4.2.
 3. Write the verifier report at `.claude-wyvrn-local/reviews/FEAT-NNNN-review.md` using the `verifier-report.md` template. The template-verifier hook fires on the write — correct and re-write if findings.
 4. Outcome:
@@ -147,6 +157,7 @@ When the human issues a modification request after flow close:
 
 - `triviality-detector` (utility skill, in-context — no subagent)
 - `run-clarifier` (utility skill, only on `standard` path)
+- `reuse-hint` (utility skill, in-context — no subagent; gated, only on `standard` and `prompt_complete` paths)
 - `run-verifier` (utility skill, only on `standard` and `prompt_complete` paths)
 - `decision-log` (utility skill)
 - `clarifier` (subagent, via run-clarifier)

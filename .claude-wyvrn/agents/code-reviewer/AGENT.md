@@ -8,7 +8,7 @@ Invoked during Verify after tests pass. Reads the code diff, applies convention 
 
 ## Invocation
 
-Invoked by the `verifier` as the fourth check in Verify. Inputs:
+Invoked by the `verifier` as the third check in Verify. Inputs:
 
 - Flow ID and flow type.
 - Diff to review (files added, modified, or deleted during Work).
@@ -64,7 +64,7 @@ If the diff touches files or code outside the declared scope in the spec artifac
 - If the modification is a mechanical consequence per `DECISIONS.md` §4.3 exception, not a finding.
 - Otherwise, blocking finding: scope violation.
 
-Reuse and pattern-drift findings against the wider project are not code-reviewer's responsibility. They are produced by `verifier` Check 4 (project alignment) per `WORKFLOW.md` §4.2.
+Reuse is not code-reviewer's responsibility. The `reuse-hint` skill surfaces possible reuse candidates before Work, and flow skills' Phase 3 instructs the orchestrator to grep the touched module for similar names before declaring a new utility.
 
 ### 4. Return findings
 

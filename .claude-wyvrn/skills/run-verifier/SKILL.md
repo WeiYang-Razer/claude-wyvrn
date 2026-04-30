@@ -24,7 +24,7 @@ Calls the `verifier` agent in a fresh context with the specified flow state. Ret
 
 1. Invoke `verifier` subagent in a fresh context with the inputs.
 2. `verifier` reads spec, clarification batch, produced artifacts, code diff, tests.
-3. `verifier` runs its five checks with independent checks in parallel per `HARNESS.md` §11.3: test suite first; AC verification, code review (via `code-reviewer`), and project alignment (inline reuse + pattern-drift scan) in parallel after tests; out-of-scope findings collection last.
+3. `verifier` runs its four checks with independent checks in parallel per `HARNESS.md` §11.3: test suite first; AC verification and code review (via `code-reviewer`) in parallel after tests; out-of-scope findings collection last.
 4. `verifier` writes the verifier report.
 5. `verifier` returns outcome:
     - `Success` — all blocking checks pass.

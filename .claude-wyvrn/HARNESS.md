@@ -116,7 +116,7 @@ Authoritative rules. Wyvrn Claude harness. Violation of any rule is a flow failu
     - `prompt_complete`: orchestrator skips the `clarifier` subagent and writes the spec directly from the prompt. Phases 3 (Work), 4 (Verify), and 5 (Validate) run normally with subagent invocations.
     - `standard`: full flow per `WORKFLOW.md`. All subagents invoked as documented.
 
-10.4 Verifier-equivalent self-check in trivial mode covers the same checks listed in `agents/verifier/AGENT.md` Behavior — acceptance criteria verification, test execution per the flow-specific delta, code review against `CONVENTIONS.md` and stack files, project-alignment scan per `agents/verifier/AGENT.md` §4, and out-of-scope findings collection — performed in the orchestrator's context. The orchestrator produces the verifier report at `.claude-wyvrn-local/reviews/[flow-id]-review.md`. Any blocking finding routes back into Work the same way subagent verifier findings do, subject to the three-cycle cap in `WORKFLOW.md` §4.4.
+10.4 Verifier-equivalent self-check in trivial mode covers the same checks listed in `agents/verifier/AGENT.md` Behavior — acceptance criteria verification, test execution per the flow-specific delta, code review against `CONVENTIONS.md` and stack files, and out-of-scope findings collection — performed in the orchestrator's context. The orchestrator produces the verifier report at `.claude-wyvrn-local/reviews/[flow-id]-review.md`. Any blocking finding routes back into Work the same way subagent verifier findings do, subject to the three-cycle cap in `WORKFLOW.md` §4.4.
 
 10.5 Autonomy rules in §5 apply unchanged. Trivial-mode flows still have exactly two human interaction points (initial prompt, final validation). Any UNDECIDED or CONTRADICTION encountered mid-Work halts the trivial path and files a late clarification per §5.4 — the flow does not silently downgrade to subagents and does not proceed past the ambiguity.
 
@@ -130,7 +130,7 @@ Authoritative rules. Wyvrn Claude harness. Violation of any rule is a flow failu
 
 11.2 Phase 1 mandatory reads (§3.1) are I/O-only and have no inter-read dependencies. Issue all eight as one parallel batch — a single agent turn with multiple `Read` tool-use blocks. The declared §3.1 ordering is the reasoning order, not the I/O order.
 
-11.3 Verifier checks per `agents/verifier/AGENT.md` Behavior run in parallel where independent. Test execution comes first because acceptance-criteria verification consumes its pass/fail results. After tests complete, acceptance-criteria verification, code review, and project alignment run concurrently — none consumes the others' output. Out-of-scope findings collection runs last because it aggregates observations surfaced by the prior checks.
+11.3 Verifier checks per `agents/verifier/AGENT.md` Behavior run in parallel where independent. Test execution comes first because acceptance-criteria verification consumes its pass/fail results. After tests complete, acceptance-criteria verification and code review run concurrently — neither consumes the other's output. Out-of-scope findings collection runs last because it aggregates observations surfaced by the prior checks.
 
 11.4 Subagent invocations within the same phase run in parallel when their inputs do not depend on each other. Sequential invocation is required only when one subagent's output is the next subagent's input.
 

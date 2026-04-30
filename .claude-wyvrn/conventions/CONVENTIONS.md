@@ -48,7 +48,7 @@ When modifying or extending an existing codebase, match the style and reuse the 
 - Naming, file structure, import and dependency patterns.
 - Existing utilities, helpers, and shared functions — call them rather than re-implementing equivalents.
 
-Observed style and reuse opportunities override written conventions only when the existing code is internally consistent. Inconsistent codebases fall back to written conventions. The verifier enforces reuse via the project-alignment check per `WORKFLOW.md` §4.2.
+Observed style and reuse opportunities override written conventions only when the existing code is internally consistent. Inconsistent codebases fall back to written conventions. Reuse is supported by two lightweight mechanisms: the `reuse-hint` skill runs before Work and surfaces possible reuse candidates as a Context note on the spec; flow skills' Phase 3 instruct the orchestrator to grep the touched module for similar names before declaring a new utility, prefer reuse, and document why a new symbol is needed when reuse is rejected.
 
 ### 2.2 No speculative code
 

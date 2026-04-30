@@ -10,6 +10,8 @@ Before Phase 1, every flow skill runs a pre-flight check per `HARNESS.md` §2.6 
 
 After Phase 1 and before Phase 2, the flow skill runs the `triviality-detector` skill per `HARNESS.md` §10. The verdict (`trivial`, `prompt_complete`, or `standard`) gates Phase 2 and Phase 4 invocations as specified below. The verdict is computed once per flow and does not change mid-flow except per `HARNESS.md` §10.7.
 
+After Phase 2 and before Phase 3, on `standard` and `prompt_complete` paths, the flow skill runs the `reuse-hint` skill per `skills/reuse-hint/SKILL.md`. On the `trivial` path the skill is skipped — the trivial gate already excludes new public symbols.
+
 Emit a one-word progress indicator in the agent response at the start of each phase: `Reading...`, `Clarifying...`, `Working...`, `Verifying...`. No indicator for Validate; the verifier report is the signal that Validate has begun.
 
 ## 1. Read
@@ -59,6 +61,14 @@ At end of Clarify:
 - Spec artifact exists and is complete: no UNDECIDED or CONTRADICTION items remain.
 - Clarification batch artifact exists with all rounds and answers recorded — only on the `standard` path. On `prompt_complete` and `trivial` paths the spec is written directly from the prompt and no clarification batch artifact is produced.
 
+## 2.5 Reuse hint
+
+2.5.1 After Clarify completes and before Phase 3, on `standard` and `prompt_complete` paths the flow skill runs the `reuse-hint` skill per `skills/reuse-hint/SKILL.md`. The skill runs in the orchestrator's context; do not invoke a subagent.
+
+2.5.2 The skill applies its own gate (skip when verdict is `trivial`, or when the spec introduces no new symbols). On `appended`, the spec gains a `Possible reuse:` block — Context section for feature specs, Implementation notes for fix and refactor specs. On `skipped` or `no_findings` the spec is unchanged.
+
+2.5.3 On the `trivial` path the skill is not invoked. The trivial-flow gate excludes new public symbols, so the hint has nothing to surface.
+
 ## 3. Work
 
 ### 3.1 Inputs
@@ -73,12 +83,13 @@ The worker agent reads:
 ### 3.2 Execution
 
 1. Implement the task according to the spec artifact.
-2. For each decision encountered, apply `DECISIONS.md` §1 classification:
+2. Before declaring any new public function, class, method, or top-level constant, grep the touched module for symbols with similar names. Prefer reuse over duplication. When a new symbol is necessary, document the reason in the spec's Implementation notes section.
+3. For each decision encountered, apply `DECISIONS.md` §1 classification:
     - SPEC-DEFINED: act.
     - INFERRED: act, log via `decision-log` skill.
     - UNDECIDED or CONTRADICTION: halt, file a late clarification per `HARNESS.md` §5.4.
-3. Produce or modify code and tests per the flow-specific delta file.
-4. Do not proceed to Verify until all acceptance criteria in the spec are implemented.
+4. Produce or modify code and tests per the flow-specific delta file.
+5. Do not proceed to Verify until all acceptance criteria in the spec are implemented.
 
 ### 3.3 Template compliance during work
 
@@ -100,16 +111,15 @@ The `verifier` (or the orchestrator inline in trivial mode):
 2. Runs tests per the flow-specific delta file.
 3. Verifies every acceptance criterion in the spec is satisfied.
 4. Invokes the `code-reviewer` agent for convention compliance and code quality review. In trivial mode, the orchestrator performs the equivalent review inline against `CONVENTIONS.md` and stack files instead of invoking `code-reviewer`.
-5. Performs the project-alignment check inline, scanning ARCHITECTURE-declared modules for missed reuse and pattern drift per `agents/verifier/AGENT.md` Check 4.
-6. Produces a verifier report at `.claude-wyvrn-local/reviews/[flow-id]-review.md`.
+5. Produces a verifier report at `.claude-wyvrn-local/reviews/[flow-id]-review.md`.
 
-Independent checks run in parallel per `HARNESS.md` §11.3: tests first; acceptance-criteria verification, code review, and project alignment in parallel after tests complete; out-of-scope findings collection last.
+Independent checks run in parallel per `HARNESS.md` §11.3: tests first; acceptance-criteria verification and code review in parallel after tests complete; out-of-scope findings collection last.
 
 ### 4.3 Verifier outcomes
 
 **Success:** all acceptance criteria met, tests pass, no blocking code-review findings. Report is marked success. Proceed to Validate.
 
-**Findings:** one or more acceptance criteria unmet, test failure, blocking code-review findings, or blocking project-alignment findings. Report lists specific findings. Return to Work.
+**Findings:** one or more acceptance criteria unmet, test failure, or blocking code-review findings. Report lists specific findings. Return to Work.
 
 **Out-of-scope findings:** issues noted during verification that are outside task scope per `DECISIONS.md` §4.2. These appear in a separate section of the report. They do not cause a Findings outcome.
 

@@ -29,18 +29,6 @@
 > [template] List any new failures (regressions) with identifiers. Empty if none.
 - <test identifier>
 
-## Project alignment
-
-> [template] Result of the project-alignment check (verifier Check 4). Records what was scanned and how many findings of each class were produced. Detailed findings are listed in the Compliance, Advisory, and Out-of-scope sections below — this section is the run summary.
-
-**Modules scanned:** <count>
-**Files sampled for pattern extrapolation:** <count>
-**Reuse candidates evaluated:** <count>
-**Blocking findings:** <count>
-**Advisory findings:** <count>
-**Out-of-scope reuse findings:** <count>
-**Truncation:** <"None." | "Top 20 retained per verifier §4.7.">
-
 ## Compliance findings
 
 > [template] Findings that fail the flow and return it to Work. Each finding is actionable and scoped. Leave this section heading even if no findings; empty is written as the single line "None."
