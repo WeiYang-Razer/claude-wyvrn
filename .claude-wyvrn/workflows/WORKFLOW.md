@@ -14,7 +14,7 @@ Emit a one-word progress indicator in the agent response at the start of each ph
 
 ## 1. Read
 
-1.1 Follow the reading protocol in `HARNESS.md` §3.1.
+1.1 Follow the reading protocol in `HARNESS.md` §3.1. Issue the eight mandatory reads as one parallel batch per `HARNESS.md` §11.2.
 1.2 Read the task-specific spec template for the current flow type, as declared in `FEATURE.md`, `FIX.md`, or `REFACTOR.md`.
 1.3 Read prior decision records in `.claude-wyvrn-local/decisions/` not marked archived.
 1.4 Do not proceed to Clarify until reading is complete.
@@ -97,18 +97,19 @@ If the verdict is `trivial`, do not invoke the `verifier` subagent. The orchestr
 The `verifier` (or the orchestrator inline in trivial mode):
 
 1. Reads the spec artifact, the clarification batch (when present), produced artifacts, produced code, and produced tests.
-2. Verifies every acceptance criterion in the spec is satisfied.
-3. Confirms the template-verifier hook (`hooks/template_verifier.py` per `HARNESS.md` §4.6) ran clean for every artifact produced during the flow, by checking the per-artifact log at `.claude-wyvrn-local/.metrics/template-verifier-findings.log`.
-4. Runs tests per the flow-specific delta file.
-5. Invokes the `code-reviewer` agent for convention compliance and code quality review. In trivial mode, the orchestrator performs the equivalent review inline against `CONVENTIONS.md` and stack files instead of invoking `code-reviewer`.
-6. Performs the project-alignment check inline, scanning ARCHITECTURE-declared modules for missed reuse and pattern drift per `agents/verifier/AGENT.md` Check 5.
-7. Produces a verifier report at `.claude-wyvrn-local/reviews/[flow-id]-review.md`.
+2. Runs tests per the flow-specific delta file.
+3. Verifies every acceptance criterion in the spec is satisfied.
+4. Invokes the `code-reviewer` agent for convention compliance and code quality review. In trivial mode, the orchestrator performs the equivalent review inline against `CONVENTIONS.md` and stack files instead of invoking `code-reviewer`.
+5. Performs the project-alignment check inline, scanning ARCHITECTURE-declared modules for missed reuse and pattern drift per `agents/verifier/AGENT.md` Check 4.
+6. Produces a verifier report at `.claude-wyvrn-local/reviews/[flow-id]-review.md`.
+
+Independent checks run in parallel per `HARNESS.md` §11.3: tests first; acceptance-criteria verification, code review, and project alignment in parallel after tests complete; out-of-scope findings collection last.
 
 ### 4.3 Verifier outcomes
 
-**Success:** all acceptance criteria met, template compliance clean, tests pass, no blocking code-review findings. Report is marked success. Proceed to Validate.
+**Success:** all acceptance criteria met, tests pass, no blocking code-review findings. Report is marked success. Proceed to Validate.
 
-**Findings:** one or more acceptance criteria unmet, template non-compliance, test failure, blocking code-review findings, or blocking project-alignment findings. Report lists specific findings. Return to Work.
+**Findings:** one or more acceptance criteria unmet, test failure, blocking code-review findings, or blocking project-alignment findings. Report lists specific findings. Return to Work.
 
 **Out-of-scope findings:** issues noted during verification that are outside task scope per `DECISIONS.md` §4.2. These appear in a separate section of the report. They do not cause a Findings outcome.
 

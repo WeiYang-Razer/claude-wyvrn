@@ -24,7 +24,7 @@ Calls the `verifier` agent in a fresh context with the specified flow state. Ret
 
 1. Invoke `verifier` subagent in a fresh context with the inputs.
 2. `verifier` reads spec, clarification batch, produced artifacts, code diff, tests.
-3. `verifier` runs its six checks in sequence: AC verification, template compliance (confirms the template-verifier hook ran clean per `HARNESS.md` §4.6, by reading the per-artifact log at `.claude-wyvrn-local/.metrics/template-verifier-findings.log`), test suite, code review (via `code-reviewer`), project alignment (inline reuse + pattern-drift scan), out-of-scope findings collection.
+3. `verifier` runs its five checks with independent checks in parallel per `HARNESS.md` §11.3: test suite first; AC verification, code review (via `code-reviewer`), and project alignment (inline reuse + pattern-drift scan) in parallel after tests; out-of-scope findings collection last.
 4. `verifier` writes the verifier report.
 5. `verifier` returns outcome:
     - `Success` — all blocking checks pass.
@@ -40,4 +40,4 @@ Calls the `verifier` agent in a fresh context with the specified flow state. Ret
 
 - `verifier` (subagent).
 - `code-reviewer` (subagent, via verifier).
-- template-verifier hook (`hooks/template_verifier.py`, fires automatically on every artifact write per `HARNESS.md` §4.6; the verifier reads the run log at `.claude-wyvrn-local/.metrics/template-verifier-findings.log`).
+- template-verifier hook (`hooks/template_verifier.py`, fires automatically on every artifact write per `HARNESS.md` §4.6).

@@ -64,7 +64,7 @@ If the diff touches files or code outside the declared scope in the spec artifac
 - If the modification is a mechanical consequence per `DECISIONS.md` §4.3 exception, not a finding.
 - Otherwise, blocking finding: scope violation.
 
-Reuse and pattern-drift findings against the wider project are not code-reviewer's responsibility. They are produced by `verifier` Check 5 (project alignment) per `WORKFLOW.md` §4.2.
+Reuse and pattern-drift findings against the wider project are not code-reviewer's responsibility. They are produced by `verifier` Check 4 (project alignment) per `WORKFLOW.md` §4.2.
 
 ### 4. Return findings
 

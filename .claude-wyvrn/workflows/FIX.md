@@ -72,7 +72,7 @@ The `verifier`:
 
 ### 5.2 Regression check
 
-The `verifier` runs the full project test suite. Any test that was passing before the fix and now fails is a finding. Pre-existing failures unrelated to the fix are recorded as out-of-scope findings per `DECISIONS.md` §4.2.
+The `verifier` runs the reproduction test plus tests in files affected by the diff, using the test runner's affected-tests mode (e.g., `jest --findRelatedTests`, `pytest --picked` or `pytest-testmon`, `go test` per touched package). If the runner does not support an affected-tests mode, fall back to the full suite and record an advisory finding noting the gap. Any test that was passing before the fix and now fails within the executed scope is a finding. Pre-existing failures unrelated to the fix are recorded as out-of-scope findings per `DECISIONS.md` §4.2.
 
 To determine pre-existing failures, the `verifier` uses the baseline recorded in the spec artifact's reproduction section from §4.1.
 

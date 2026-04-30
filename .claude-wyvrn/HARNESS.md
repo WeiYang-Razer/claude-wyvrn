@@ -21,7 +21,7 @@ Authoritative rules. Wyvrn Claude harness. Violation of any rule is a flow failu
 
 ## 3. Reading protocol
 
-3.1 At the start of every flow, read in this order:
+3.1 At the start of every flow, read the following files. The numbering is the reasoning order — the order in which earlier files are presumed to inform later ones. The reads themselves are I/O-only and are issued as one parallel batch per §11.2:
     1. `~/.claude-wyvrn/HARNESS.md`
     2. `~/.claude-wyvrn/DECISIONS.md`
     3. `~/.claude-wyvrn/conventions/CONVENTIONS.md`
@@ -30,7 +30,7 @@ Authoritative rules. Wyvrn Claude harness. Violation of any rule is a flow failu
     6. The flow-type file for the current task (`FEATURE.md`, `FIX.md`, or `REFACTOR.md`)
     7. `.claude-wyvrn-local/PROJECT.md` if present, else `README.md`
     8. `.claude-wyvrn-local/ARCHITECTURE.md`
-3.2 Stack-specific conventions files are read on demand as source files are touched. See `CONVENTIONS.md` §1.3.
+3.2 Stack-specific conventions files: header blocks (extension declarations) are read at flow start to build the extension→stack-file map; bodies are read on demand on first match against a touched source file. See `CONVENTIONS.md` §1.3.
 3.3 Read task-specific templates and prior artifacts as directed by the active flow.
 3.4 Do not begin work until the full reading sequence is complete.
 
@@ -116,10 +116,22 @@ Authoritative rules. Wyvrn Claude harness. Violation of any rule is a flow failu
     - `prompt_complete`: orchestrator skips the `clarifier` subagent and writes the spec directly from the prompt. Phases 3 (Work), 4 (Verify), and 5 (Validate) run normally with subagent invocations.
     - `standard`: full flow per `WORKFLOW.md`. All subagents invoked as documented.
 
-10.4 Verifier-equivalent self-check in trivial mode covers the same checks listed in `agents/verifier/AGENT.md` Behavior — acceptance criteria verification, template compliance check (read the hook log at `.claude-wyvrn-local/.metrics/template-verifier-findings.log`), test execution per the flow-specific delta, code review against `CONVENTIONS.md` and stack files, project-alignment scan per `agents/verifier/AGENT.md` §5, and out-of-scope findings collection — performed in the orchestrator's context. The orchestrator produces the verifier report at `.claude-wyvrn-local/reviews/[flow-id]-review.md`. Any blocking finding routes back into Work the same way subagent verifier findings do, subject to the three-cycle cap in `WORKFLOW.md` §4.4.
+10.4 Verifier-equivalent self-check in trivial mode covers the same checks listed in `agents/verifier/AGENT.md` Behavior — acceptance criteria verification, test execution per the flow-specific delta, code review against `CONVENTIONS.md` and stack files, project-alignment scan per `agents/verifier/AGENT.md` §4, and out-of-scope findings collection — performed in the orchestrator's context. The orchestrator produces the verifier report at `.claude-wyvrn-local/reviews/[flow-id]-review.md`. Any blocking finding routes back into Work the same way subagent verifier findings do, subject to the three-cycle cap in `WORKFLOW.md` §4.4.
 
 10.5 Autonomy rules in §5 apply unchanged. Trivial-mode flows still have exactly two human interaction points (initial prompt, final validation). Any UNDECIDED or CONTRADICTION encountered mid-Work halts the trivial path and files a late clarification per §5.4 — the flow does not silently downgrade to subagents and does not proceed past the ambiguity.
 
 10.6 The orchestrator records the verdict and reason in the spec artifact's Implementation notes section so a reader can audit which path the flow took.
 
 10.7 Verdict is computed once per flow at Phase 1.5 and does not change mid-flow, except when a late clarification per §5.4 is filed during a trivial-mode Work — in that case the flow halts as documented and the human resolves the ambiguity, after which the flow continues on the path the human directs.
+
+## 11. Parallelization
+
+11.1 Independent operations run in parallel by default. Sequence only where one operation's output is the next operation's input, or where a real ordering constraint applies (e.g., code review needs the diff that Work produced).
+
+11.2 Phase 1 mandatory reads (§3.1) are I/O-only and have no inter-read dependencies. Issue all eight as one parallel batch — a single agent turn with multiple `Read` tool-use blocks. The declared §3.1 ordering is the reasoning order, not the I/O order.
+
+11.3 Verifier checks per `agents/verifier/AGENT.md` Behavior run in parallel where independent. Test execution comes first because acceptance-criteria verification consumes its pass/fail results. After tests complete, acceptance-criteria verification, code review, and project alignment run concurrently — none consumes the others' output. Out-of-scope findings collection runs last because it aggregates observations surfaced by the prior checks.
+
+11.4 Subagent invocations within the same phase run in parallel when their inputs do not depend on each other. Sequential invocation is required only when one subagent's output is the next subagent's input.
+
+11.5 Tool calls within a single agent turn that have no inter-call dependency are issued as a single message with multiple tool-use blocks rather than one call per turn. This applies to reads, greps, globs, and any other side-effect-free or independent operations.

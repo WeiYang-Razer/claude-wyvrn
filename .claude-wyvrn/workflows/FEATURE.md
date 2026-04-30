@@ -65,7 +65,7 @@ If the test does not actually exercise the acceptance criterion, this is a findi
 
 ### 5.2 Test suite execution
 
-The `verifier` runs the full project test suite. Pre-existing failures unrelated to the feature are recorded as out-of-scope findings per `DECISIONS.md` §4.2. New failures or regressions are findings that return the flow to Work.
+The `verifier` runs the new tests written for the feature plus tests in files affected by the diff, using the test runner's affected-tests mode (e.g., `jest --findRelatedTests`, `pytest --picked` or `pytest-testmon`, `go test` per touched package). If the runner does not support an affected-tests mode, fall back to the full suite and record an advisory finding noting the gap. Pre-existing failures unrelated to the feature are recorded as out-of-scope findings per `DECISIONS.md` §4.2. New failures or regressions in the executed scope are findings that return the flow to Work.
 
 ## 6. Flow-specific prohibitions
 

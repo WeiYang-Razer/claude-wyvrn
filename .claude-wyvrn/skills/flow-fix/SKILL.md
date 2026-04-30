@@ -37,8 +37,8 @@ Verify `~/.claude-wyvrn/` exists and contains `VERSION`, `HARNESS.md`, `INDEX.md
 ### Phase 1: Read
 
 1. Emit `Reading...` in the session.
-2. Read all files per `HARNESS.md` §3.1.
-3. Read `workflows/WORKFLOW.md` and `workflows/FIX.md`.
+2. Read all files per `HARNESS.md` §3.1, issued as one parallel batch per `HARNESS.md` §11.2.
+3. Read `workflows/WORKFLOW.md` and `workflows/FIX.md` (in the same parallel batch as step 2 where not already covered).
 4. Read prior decision records not marked archived.
 5. Assign flow ID: scan `.claude-wyvrn-local/fixes/` for highest existing `FIX-NNNN`, increment by 1. Human may override.
 6. Generate slug from task title.
@@ -87,11 +87,11 @@ If the Phase 1.5 verdict is `prompt_complete` or `trivial`:
 
 If the Phase 1.5 verdict is `standard` or `prompt_complete`: same orchestration as flow-feature Phase 4 standard/prompt_complete paths. Invokes `run-verifier`. The verifier applies `FIX.md` §5 deltas.
 
-If the Phase 1.5 verdict is `trivial`: orchestrator runs the verifier-equivalent self-check inline per `HARNESS.md` §10.4 in its own context. Apply every check in `agents/verifier/AGENT.md` Behavior, with the `FIX.md` §5 deltas:
+If the Phase 1.5 verdict is `trivial`: orchestrator runs the verifier-equivalent self-check inline per `HARNESS.md` §10.4 in its own context. Apply every check in `agents/verifier/AGENT.md` Behavior, with the `FIX.md` §5 deltas. Run independent checks in parallel per `HARNESS.md` §11.3 — tests first, then AC verification + code review + project alignment in parallel, then out-of-scope findings collection:
 
 - **Reproduction test verification per `FIX.md` §5.1.** Locate the reproduction test. Run it. Confirm it passes post-fix. Cross-reference the test against the spec's reproduction conditions.
-- **Regression check per `FIX.md` §5.2.** Run the project test suite. Compare to the baseline recorded during Work. New failures are findings; pre-existing failures are out-of-scope per `DECISIONS.md` §4.2.
-- **AC verification, template compliance (read the hook log), code review against `CONVENTIONS.md` and stack files, project alignment per `agents/verifier/AGENT.md` Check 5, out-of-scope findings collection** — all inline.
+- **Regression check per `FIX.md` §5.2.** Run the reproduction test plus tests in files affected by the diff. Compare to the baseline recorded during Work. New failures are findings; pre-existing failures are out-of-scope per `DECISIONS.md` §4.2.
+- **AC verification, code review against `CONVENTIONS.md` and stack files, project alignment per `agents/verifier/AGENT.md` Check 4, out-of-scope findings collection** — all inline.
 
 Write the verifier report at `.claude-wyvrn-local/reviews/FIX-NNNN-review.md`. Outcome routing: blocking finding → return to Phase 3 (Work) with the finding as scope, increment cycle. Three-cycle cap per `WORKFLOW.md` §4.4 still applies.
 

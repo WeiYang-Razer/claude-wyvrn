@@ -15,17 +15,9 @@
 |---|---|---|
 | <AC-N> | <Pass | Fail> | <test identifier or artifact reference> |
 
-## Template compliance
-
-> [template] Per-artifact template compliance results sourced from the template-verifier hook log at `.claude-wyvrn-local/.metrics/template-verifier-findings.log`. One row per artifact produced or modified in this flow.
-
-| Artifact | Status | Notes |
-|---|---|---|
-| <artifact path> | <Pass | Fail> | <notes if fail, else N/A> |
-
 ## Test suite results
 
-> [template] Result of running the project test suite per the flow-specific delta. For refactor flows, compare to baseline.
+> [template] Result of running tests per the flow-specific delta (feature/fix: new and affected tests; refactor: full suite vs baseline). For refactor flows, compare to baseline.
 
 **Test command:** <command used>
 **Total tests:** <count>
@@ -39,7 +31,7 @@
 
 ## Project alignment
 
-> [template] Result of the project-alignment check (verifier Check 5). Records what was scanned and how many findings of each class were produced. Detailed findings are listed in the Compliance, Advisory, and Out-of-scope sections below — this section is the run summary.
+> [template] Result of the project-alignment check (verifier Check 4). Records what was scanned and how many findings of each class were produced. Detailed findings are listed in the Compliance, Advisory, and Out-of-scope sections below — this section is the run summary.
 
 **Modules scanned:** <count>
 **Files sampled for pattern extrapolation:** <count>
@@ -47,7 +39,7 @@
 **Blocking findings:** <count>
 **Advisory findings:** <count>
 **Out-of-scope reuse findings:** <count>
-**Truncation:** <"None." | "Top 20 retained per verifier §5.7.">
+**Truncation:** <"None." | "Top 20 retained per verifier §4.7.">
 
 ## Compliance findings
 

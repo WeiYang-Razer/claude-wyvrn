@@ -35,8 +35,8 @@ Verify `~/.claude-wyvrn/` exists and contains `VERSION`, `HARNESS.md`, `INDEX.md
 ### Phase 1: Read
 
 1. Emit `Reading...` in the session.
-2. Read all files per `HARNESS.md` §3.1.
-3. Read `workflows/WORKFLOW.md` and `workflows/FEATURE.md`.
+2. Read all files per `HARNESS.md` §3.1, issued as one parallel batch per `HARNESS.md` §11.2.
+3. Read `workflows/WORKFLOW.md` and `workflows/FEATURE.md` (in the same parallel batch as step 2 where not already covered).
 4. Read prior decision records in `.claude-wyvrn-local/decisions/` not marked archived.
 5. Assign flow ID: scan `.claude-wyvrn-local/features/` for highest existing `FEAT-NNNN`, increment by 1. Human may override via the initial prompt.
 6. Generate slug from task title.
@@ -101,12 +101,11 @@ If the Phase 1.5 verdict is `standard` or `prompt_complete`:
 If the Phase 1.5 verdict is `trivial`:
 
 1. Emit `Verifying...` in the session.
-2. Do not invoke `run-verifier`. Do not invoke `verifier` or `code-reviewer` subagents. Run the verifier-equivalent self-check inline per `HARNESS.md` §10.4, in the orchestrator's context, applying every check in `agents/verifier/AGENT.md` Behavior:
+2. Do not invoke `run-verifier`. Do not invoke `verifier` or `code-reviewer` subagents. Run the verifier-equivalent self-check inline per `HARNESS.md` §10.4, in the orchestrator's context, applying every check in `agents/verifier/AGENT.md` Behavior. Run independent checks in parallel per `HARNESS.md` §11.3 — tests first, then AC verification + code review + project alignment in parallel, then out-of-scope findings collection:
+    - **Test execution.** Run tests per `FEATURE.md` §5.2. Record results.
     - **AC verification.** For each acceptance criterion in the spec, locate the test or artifact that satisfies it. Confirm.
-    - **Template compliance.** Read `.claude-wyvrn-local/.metrics/template-verifier-findings.log`. Confirm every artifact written this flow has `findings=0` on its latest entry.
-    - **Test execution.** Run the test suite per `FEATURE.md` §5.2. Record results.
     - **Code review.** Re-read the diff against `CONVENTIONS.md` §2-3 and any stack-specific files matched in Phase 3. Look for blocking convention violations.
-    - **Project alignment.** Per `agents/verifier/AGENT.md` Check 5. Trivial flows excluded new public symbols at the gate, so this check is mostly trivial; confirm.
+    - **Project alignment.** Per `agents/verifier/AGENT.md` Check 4. Trivial flows excluded new public symbols at the gate, so this check is mostly trivial; confirm.
     - **Out-of-scope findings.** Collect any issues outside scope per `DECISIONS.md` §4.2.
 3. Write the verifier report at `.claude-wyvrn-local/reviews/FEAT-NNNN-review.md` using the `verifier-report.md` template. The template-verifier hook fires on the write — correct and re-write if findings.
 4. Outcome:

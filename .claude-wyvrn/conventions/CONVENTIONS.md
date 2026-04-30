@@ -21,11 +21,12 @@ Every stack file declares its applicable file extensions in a header block at th
 
 At flow start:
 
-1. Read all files in `~/.claude-wyvrn/conventions/` and `.claude-wyvrn-local/conventions/`.
+1. Read only the header block of each file in `~/.claude-wyvrn/conventions/` and `.claude-wyvrn-local/conventions/`. The header block carries the `**Stack:**` and `**Applies to extensions:**` declarations and ends before the first `## ` heading. This establishes the extension→stack-file map without loading any rule bodies. Issue these header reads in parallel per `HARNESS.md` §11.2.
 2. Build a map from file extension to stack file. On the same extension, project file wins over package file.
-3. For each source file touched during the flow, apply the matching stack file in addition to this universal file.
-4. If a touched extension has no matching stack file, apply only this universal file, and add a clarification asking whether a stack file should be created.
-5. The `conventions/gitflow.md` file in either territory is read on demand at the first Git operation of the flow (branch creation, commit, push, PR). Project file overrides package file. If absent in both territories, agents follow whatever Git practice the existing repository displays per §2.1.
+3. Lazy-load the body. Read a stack file's body (everything from the first `## ` heading onward) only when a touched source file maps to it. The body for a given stack is read at most once per flow; subsequent matches in the same flow reuse the already-loaded content.
+4. For each source file touched during the flow, apply the matching stack file (loading its body per step 3 on first match) in addition to this universal file.
+5. If a touched extension has no matching stack file, apply only this universal file, and add a clarification asking whether a stack file should be created.
+6. The `conventions/gitflow.md` file in either territory is read on demand at the first Git operation of the flow (branch creation, commit, push, PR). Project file overrides package file. If absent in both territories, agents follow whatever Git practice the existing repository displays per §2.1.
 
 ### 1.4 Precedence on conflict
 
