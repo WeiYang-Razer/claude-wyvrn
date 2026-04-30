@@ -67,7 +67,7 @@ Exception: tests that exist to assert implementation details removed by the refa
 
 ### 4.4 Architecture updates
 
-Refactor flows may modify `.claude-wyvrn-local/ARCHITECTURE.md`. When the refactor alters architectural elements (module boundaries, dependency patterns, structural decisions), update ARCHITECTURE.md as part of the flow. The `template-verifier` agent verifies the update matches the architecture template.
+Refactor flows may modify `.claude-wyvrn-local/ARCHITECTURE.md`. When the refactor alters architectural elements (module boundaries, dependency patterns, structural decisions), update ARCHITECTURE.md as part of the flow. The template-verifier hook verifies the update matches the architecture template.
 
 ## 5. Verify deltas
 

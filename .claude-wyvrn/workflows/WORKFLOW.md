@@ -72,7 +72,7 @@ The worker agent reads:
 
 ### 3.3 Template compliance during work
 
-All artifacts written during work must conform to their templates per `HARNESS.md` §4. Every artifact write triggers `template-verifier` before the writing agent returns control.
+All artifacts written during work must conform to their templates per `HARNESS.md` §4. Every artifact write triggers the template-verifier hook (`hooks/template_verifier.py`) before the writing agent returns control.
 
 ## 4. Verify
 
@@ -86,7 +86,7 @@ The `verifier`:
 
 1. Reads the spec artifact, the clarification batch, produced artifacts, produced code, and produced tests.
 2. Verifies every acceptance criterion in the spec is satisfied.
-3. Invokes the `template-verifier` agent to verify structural template compliance of every artifact produced.
+3. Confirms the template-verifier hook (`hooks/template_verifier.py` per `HARNESS.md` §4.6) ran clean for every artifact produced during the flow, by checking the per-artifact log at `.claude-wyvrn-local/.metrics/template-verifier-findings.log`.
 4. Runs tests per the flow-specific delta file.
 5. Invokes the `code-reviewer` agent for convention compliance and code quality review.
 6. Performs the project-alignment check inline, scanning ARCHITECTURE-declared modules for missed reuse and pattern drift per `agents/verifier/AGENT.md` Check 5.

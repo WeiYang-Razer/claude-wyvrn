@@ -51,7 +51,7 @@ Authoritative rules. Wyvrn Claude harness. Violation of any rule is a flow failu
 4.3 Do not add sections not present in the template.
 4.4 Do not remove sections present in the template. Unused sections are left with explicit `N/A` content.
 4.5 Do not rename, reorder, or reformat template sections.
-4.6 Every artifact write or modification triggers the `template-verifier` agent before the writing agent returns control. Non-compliance is a flow failure. The writing agent corrects and re-verifies until clean. Read-only access to existing artifacts does not trigger template-verifier — artifacts produced under prior harness versions remain readable even if they do not match current templates.
+4.6 Every artifact write or modification triggers the template-verifier hook (`hooks/template_verifier.py`, registered as a `PostToolUse` hook on `Write`/`Edit`/`MultiEdit` for paths under `.claude-wyvrn-local/`). On non-compliance the hook exits non-zero and emits findings to stderr, which Claude Code surfaces back to the writing agent as a tool-use error; the agent corrects the artifact and re-writes until the hook is silent. Non-compliance left unresolved by flow end is a flow failure. Read-only access does not trigger the hook — artifacts produced under prior harness versions remain readable even if they do not match current templates. Every invocation, compliant or not, is logged to `.claude-wyvrn-local/.metrics/template-verifier-findings.log` for measurement. See `hooks/README.md` for installation.
 
 ## 5. Autonomy
 

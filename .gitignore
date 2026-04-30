@@ -1,0 +1,6 @@
+# Python bytecode caches (template-verifier hook)
+__pycache__/
+*.pyc
+
+# Local Claude session state
+.claude/

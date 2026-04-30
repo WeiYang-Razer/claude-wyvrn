@@ -12,7 +12,7 @@ Typically invoked once after the harness skeleton has been copied into a new pro
 
 ## Description
 
-The harness installer drops an empty `ARCHITECTURE.md` template and no `PROJECT.md`. This skill auto-drafts both files by inspecting the project root — package manifests, top-level directory layout, README, CI configs — and proposes a populated draft of each file. The human reviews via `AskUserQuestion` and either accepts or refines. On accept, the skill writes the files and runs `template-check` on each.
+The harness installer drops an empty `ARCHITECTURE.md` template and no `PROJECT.md`. This skill auto-drafts both files by inspecting the project root — package manifests, top-level directory layout, README, CI configs — and proposes a populated draft of each file. The human reviews via `AskUserQuestion` and either accepts or refines. On accept, the skill writes the files; the template-verifier hook fires automatically on each write per `HARNESS.md` §4.6.
 
 This skill is the install-time analog of `migrate-foreign-framework`. The latter handles projects that already have ad-hoc Claude content; this one handles projects that have nothing.
 
@@ -119,7 +119,7 @@ On final confirm:
 
 1. Write `.claude-wyvrn-local/PROJECT.md` with the agreed content.
 2. Write `.claude-wyvrn-local/ARCHITECTURE.md` with the agreed content (replacing the unfilled template, not appending to it).
-3. Invoke `template-check` skill on each written file per `HARNESS.md` §4.6. If non-compliant, correct and re-verify until clean.
+3. The template-verifier hook (`hooks/template_verifier.py` per `HARNESS.md` §4.6) runs automatically on each write. If the hook returns findings via stderr, correct the file and re-write until the hook is silent.
 4. Print summary per the Output section.
 
 ### 8. Edge cases
@@ -170,4 +170,4 @@ Next:
 
 ## Invokes
 
-- `template-verifier` (subagent, via `template-check` on each written file).
+- template-verifier hook (`hooks/template_verifier.py`, fires automatically on each written file per `HARNESS.md` §4.6).

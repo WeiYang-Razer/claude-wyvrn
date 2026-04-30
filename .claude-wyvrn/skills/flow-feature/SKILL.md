@@ -64,7 +64,7 @@ Verify `~/.claude-wyvrn/` exists and contains `VERSION`, `HARNESS.md`, `INDEX.md
     - INFERRED → act, invoke `decision-log` skill.
     - UNDECIDED or CONTRADICTION → halt, file a late clarification per `HARNESS.md` §5.4.
 6. Write new tests covering every acceptance criterion per `CONVENTIONS.md` §2.6.
-7. Every artifact write triggers `template-verifier` per `HARNESS.md` §4.6.
+7. Every artifact write triggers the template-verifier hook (`hooks/template_verifier.py`) per `HARNESS.md` §4.6.
 
 ### Phase 4: Verify
 
@@ -112,5 +112,5 @@ When the human issues a modification request after flow close:
 - `decision-log` (utility skill)
 - `clarifier` (subagent, via run-clarifier)
 - `verifier` (subagent, via run-verifier)
-- `template-verifier` (subagent, via artifact writes and via verifier)
+- template-verifier hook (`hooks/template_verifier.py`, fires automatically on every artifact write)
 - `code-reviewer` (subagent, via verifier)

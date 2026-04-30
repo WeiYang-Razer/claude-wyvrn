@@ -24,6 +24,7 @@ Navigation map. Wyvrn Claude harness. Locate paths, templates, and artifact fold
 | `templates/*.md` | read | Source templates for artifacts. |
 | `skills/[name]/SKILL.md` | read | Skill definitions. Discovered by folder scan. |
 | `agents/[name]/AGENT.md` | read | Subagent definitions. Discovered by folder scan. |
+| `hooks/` | read | Deterministic scripts wired into Claude Code's hook system. See `hooks/README.md` for installation. |
 | `extensions/` | read | Drop-in extension packages, namespaced. |
 
 ## Project territory: `.claude-wyvrn-local/`

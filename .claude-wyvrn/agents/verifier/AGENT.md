@@ -38,7 +38,7 @@ For each AC in the spec:
 
 ### 2. Template compliance
 
-Invoke `template-verifier` on every artifact produced or modified during the flow. Template-verifier runs per artifact and returns findings.
+Confirm the template-verifier hook (`hooks/template_verifier.py`, registered per `HARNESS.md` §4.6) ran clean on every artifact produced or modified during the flow. The hook fires at write time on `Write`/`Edit`/`MultiEdit`; consult `.claude-wyvrn-local/.metrics/template-verifier-findings.log` for the per-artifact run record. Any artifact whose latest log entry shows `findings>0` is a finding here.
 
 ### 3. Test suite execution
 

@@ -17,7 +17,7 @@
 
 ## Template compliance
 
-> [template] Per-artifact template compliance results from `template-verifier`. One row per artifact produced or modified in this flow.
+> [template] Per-artifact template compliance results sourced from the template-verifier hook log at `.claude-wyvrn-local/.metrics/template-verifier-findings.log`. One row per artifact produced or modified in this flow.
 
 | Artifact | Status | Notes |
 |---|---|---|

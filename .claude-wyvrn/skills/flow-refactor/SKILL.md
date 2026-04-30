@@ -63,7 +63,7 @@ Same orchestration as flow-feature Phase 2. Invokes `run-clarifier` with flow ty
     3. Do not delete, rename, or weaken existing tests without a decision record.
     4. Update `.claude-wyvrn-local/ARCHITECTURE.md` if the refactor alters architectural elements. The architecture update adds a Change log entry and, if prior entries were edited, a Changes entry.
 6. Apply `DECISIONS.md` §1 classification to every decision. INFERRED → `decision-log` skill.
-7. Every artifact write triggers `template-verifier` per `HARNESS.md` §4.6.
+7. Every artifact write triggers the template-verifier hook (`hooks/template_verifier.py`) per `HARNESS.md` §4.6.
 
 ### Phase 4: Verify
 

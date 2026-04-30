@@ -62,7 +62,7 @@ Same orchestration as flow-feature Phase 2. Invokes `run-clarifier` with flow ty
     2. Run the reproduction test. Confirm it now passes.
     3. Run existing tests. Confirm no regression.
 6. Apply `DECISIONS.md` §1 classification to every decision. INFERRED → `decision-log` skill.
-7. Every artifact write triggers `template-verifier` per `HARNESS.md` §4.6.
+7. Every artifact write triggers the template-verifier hook (`hooks/template_verifier.py`) per `HARNESS.md` §4.6.
 
 ### Phase 4: Verify
 

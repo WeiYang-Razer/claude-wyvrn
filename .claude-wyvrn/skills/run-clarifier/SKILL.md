@@ -41,4 +41,4 @@ The invoking skill handles session prompting for batch questions by invoking `As
 ## Invokes
 
 - `clarifier` (subagent).
-- `template-verifier` (subagent, via clarifier's artifact writes).
+- template-verifier hook (`hooks/template_verifier.py`, fires automatically on the clarifier's artifact writes).

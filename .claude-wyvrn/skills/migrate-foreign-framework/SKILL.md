@@ -115,7 +115,7 @@ Once the user confirms the plan, execute it in this order:
    - `.claude-wyvrn-local/conventions/<stack>.md` for any preserved stack conventions
    - Any other harness-allowed location based on the plan
 
-For each written file, ensure it follows the relevant template's structure (load the template first, fill in fields). Run the `template-check` skill on each new file you produce.
+For each written file, ensure it follows the relevant template's structure (load the template first, fill in fields). The template-verifier hook fires automatically on each write per `HARNESS.md` §4.6 — correct any findings it surfaces and re-write until silent.
 
 4. **Print a summary** of what was done, with paths. Mention that the originals are still available in the archive directory.
 

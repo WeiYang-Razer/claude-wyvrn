@@ -159,7 +159,7 @@ Do not open any artifact with introductory prose about what the document is or w
 
 ### 4.3 Template compliance
 
-Every artifact must match its template structurally. Rules are in `HARNESS.md` §4. Enforcement is by the `template-verifier` agent. Section presence, order, and naming are fixed by the template.
+Every artifact must match its template structurally. Rules are in `HARNESS.md` §4. Enforcement is by the template-verifier hook (`hooks/template_verifier.py`) registered as a `PostToolUse` hook on `Write`/`Edit`/`MultiEdit`. Section presence, order, and naming are fixed by the template.
 
 ### 4.4 Template marker convention
 
@@ -169,4 +169,4 @@ Templates use `> [template]` blockquote markers to distinguish instructional con
 - Do not copy `> [template]` lines into the output artifact.
 - All other lines (headings, list items, tables, prose) are structural and must appear in the output artifact as-is, with `<placeholder>` tokens replaced by content.
 
-The `template-verifier` agent strips `> [template]` lines before comparing template structure to artifact structure.
+The template-verifier hook strips `> [template]` lines before comparing template structure to artifact structure.
