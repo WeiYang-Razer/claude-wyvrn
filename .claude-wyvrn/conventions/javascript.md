@@ -32,7 +32,7 @@
 
 - Import order: Node built-ins, third-party, project absolute imports, relative imports. Blank line between groups.
 - No default exports for shared utilities; named exports only. Default exports are acceptable for React components and Next.js pages.
-- New `dependencies` or `devDependencies` require a decision record per `CONVENTIONS.md` §2.3.
+- New `dependencies` or `devDependencies` require explicit user confirmation per `universal.md` §1.3.
 - Lock file (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`) is committed. Never edit by hand.
 - Do not import from `node_modules` paths directly; import the package name.
 
@@ -42,7 +42,7 @@
 - Custom error classes extend `Error`, set `this.name`, and capture stack with `Error.captureStackTrace` when available.
 - `async`/`await` for asynchronous code. Promise chains only when composing existing Promise-returning APIs.
 - Every `await` is either inside `try`/`catch` or inside a function whose caller catches. No floating rejections.
-- Validate function inputs at exported API boundaries; trust internal callers per `CONVENTIONS.md` §3.5.
+- Validate function inputs at exported API boundaries; trust internal callers per `universal.md` §2.5.
 
 ## Testing
 

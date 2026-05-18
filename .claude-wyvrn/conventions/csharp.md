@@ -17,7 +17,7 @@
 
 - `dotnet format` with the project's `.editorconfig` is authoritative.
 - 4-space indent, 120-column soft limit.
-- Allman braces (open brace on its own line). Match existing file if it uses K&R.
+- Allman braces (open brace on its own line).
 - `var` when the type is obvious from the right-hand side; explicit type otherwise.
 - File-scoped namespaces (`namespace Foo.Bar;`) for new files when the project targets .NET 6+.
 - `using` directives outside the namespace, sorted with `System.*` first.
@@ -33,7 +33,7 @@
 ## Imports and dependencies
 
 - NuGet package versions pinned in `Directory.Packages.props` (Central Package Management) when the solution uses CPM, otherwise in each `.csproj`.
-- New NuGet packages require a decision record per `CONVENTIONS.md` §2.3.
+- New NuGet packages require explicit user confirmation per `universal.md` §1.3.
 - Prefer .NET BCL over third-party for collections, JSON, HTTP, logging.
 - `global using` statements live in a single `GlobalUsings.cs` per project, not scattered.
 

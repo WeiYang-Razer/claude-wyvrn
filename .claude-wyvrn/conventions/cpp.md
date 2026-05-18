@@ -17,9 +17,9 @@
 
 - C++23 baseline. Concepts, ranges and views, `std::span`, `std::string_view`, `std::format` / `std::print` / `std::println`, three-way comparison, modules, `std::jthread`, `std::expected`, `std::mdspan`, `std::flat_map`, `std::generator`, `if consteval`, and deducing `this` are baseline — do not gate behind project opt-ins.
 - `clang-format` with the project's `.clang-format` file is authoritative. If absent, Google style with 4-space indent and 100-column lines.
-- West const (`const int x`) for new code. Existing files may use east const; do not mix within a translation unit.
-- Braces on the same line for functions and control flow (Stroustrup is acceptable when matching existing file).
-- Pointer/reference sigil binds to the type: `int* p`, not `int *p`. Match the file if it uses the other style.
+- West const (`const int x`) for new code.
+- Braces on the same line for functions and control flow.
+- Pointer/reference sigil binds to the type: `int* p`, not `int *p`.
 - Brace-initialize (`T x{...}`) by default to prevent narrowing. Use `=` only for primitives where narrowing is intended and obvious.
 - Almost-always-`auto` for local variables when the type is obvious from the right-hand side or irrelevant to the reader. Spell the type out when the contract matters (return types of public APIs, function parameters, members).
 
@@ -35,7 +35,7 @@
 ## Imports and dependencies
 
 - Use angle brackets for system and third-party (`<vector>`, `<boost/optional.hpp>`); quotes for project headers (`"foo/bar.h"`).
-- New third-party libraries require a decision record per `CONVENTIONS.md` §2.3 and an entry in the build system (CMake `find_package`, vcpkg manifest, or equivalent).
+- New third-party libraries require explicit user confirmation per `universal.md` §1.3 and an entry in the build system (CMake `find_package`, vcpkg manifest, or equivalent).
 - No `using namespace std;` at file or header scope. Inside function bodies only when scoped narrowly. The `using std::swap; swap(a, b);` two-step is the exception — that is the documented customization-point idiom, not a namespace import.
 - Prefer standard library over hand-rolled. Prefer Boost over hand-rolled when Boost is already a dependency.
 

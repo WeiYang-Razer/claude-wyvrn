@@ -5,7 +5,7 @@
 **Stack:** <stack identifier, e.g., js, python, cpp, csharp>
 **Applies to extensions:** <comma-separated list, e.g., .js, .jsx, .mjs, .cjs>
 
-> [template] The `Applies to extensions` header is read by the agent at flow start per `CONVENTIONS.md` §1.3 to build the extension-to-stack map.
+> [template] The `Applies to extensions` header tells `/flow` which file extensions trigger lazy-loading of this convention. See the matching list in `~/.claude-wyvrn/CLAUDE.md`.
 
 ## Naming
 
@@ -39,7 +39,7 @@
 
 ## Testing
 
-> [template] Stack-specific test conventions. Test framework, file naming, test runner invocation command, test organization. General test rules are in `~/.claude-wyvrn/conventions/CONVENTIONS.md` §2.6; this section layers stack-specific details on top.
+> [template] Stack-specific test conventions. Test framework, file naming, test runner invocation command, test organization. General test rules are in `~/.claude-wyvrn/conventions/universal.md` §1.6; this section layers stack-specific details on top.
 
 **Test framework:** <name and version>
 **Test file pattern:** <glob or pattern>

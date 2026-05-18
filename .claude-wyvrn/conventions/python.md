@@ -34,7 +34,7 @@
 - Import order per `isort`/`ruff`: standard library, third-party, first-party, local. Blank line between groups.
 - Absolute imports for cross-package; relative imports (`from .module import ...`) within a package.
 - No wildcard imports (`from foo import *`) outside `__init__.py` re-exports.
-- New dependencies require a decision record per `CONVENTIONS.md` §2.3 and an entry in `pyproject.toml` `[project.dependencies]` or the project's poetry/uv lockfile.
+- New dependencies require explicit user confirmation per `universal.md` §1.3 and an entry in `pyproject.toml` `[project.dependencies]` or the project's poetry/uv lockfile.
 - Pin direct dependencies; use the lockfile (`poetry.lock`, `uv.lock`, `requirements.txt` with hashes) for transitive pins.
 
 ## Error handling

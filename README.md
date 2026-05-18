@@ -1,134 +1,121 @@
-# Wyvrn Claude Tools — Harness
+# Wyvrn Claude harness — v2.0.0
 
-A standardized structure that lets Claude Code, Claude CLI, and Claude Cowork agents do development work autonomously and predictably.
+A lean, opinionated structure that lets Claude Code run development work autonomously, predictably, and **fast**.
 
-Starting in v0.2, the harness installs **globally per machine** (one install, many projects) and each project carries a small **project-local folder** for its artifacts.
+v2.0.0 replaces v1.x's five-phase orchestration (clarifier subagent → reuse-hint → work → verifier + code-reviewer subagents → validate, with template-verified artifacts at every step) with **one `/flow` skill** that runs the whole task inline. Target time per task drops from 20–25 min to **3–7 min** for simple work and 8–15 min for medium work.
 
-## Install (v0.2 — manual)
+## What's in v2.0.0
 
-This archive contains two top-level folders:
+- **One `/flow` skill** — single runbook for feature/fix/refactor. Plan-first. Asks only what it can't infer. Implements with tests. Self-verifies. Writes a learning log. Offers to push.
+- **`/wyvrn-refresh-context` skill** — populates and syncs `.claude-wyvrn-local/PROJECT.md`, `ARCHITECTURE.md`, and project-specific conventions from the codebase. Also absorbs lessons from /flow mistakes.
+- **`/migrate-foreign-framework` skill** — migrates projects with hand-written `CLAUDE.md` or other ad-hoc Claude setups into the harness layout.
+- **Conventions** — universal + gitflow + six stacks (JavaScript, TypeScript, Python, C#, C++, React).
+- **Learning logs** — every /flow run writes a free-form markdown summary to `.claude-wyvrn-local/plans/` focused on mistakes Claude made and how the human corrected them. /flow retrieves relevant past logs when starting similar tasks.
 
-- `.claude-wyvrn/` — the harness itself. Install to `~/.claude-wyvrn/` (your home directory).
-- `.claude-wyvrn-local/` — CLAUDE.md —  Install to local project directory.
+## What v2.0.0 dropped (breaking change from v1.x)
 
-### Install the harness globally (once per machine)
+- The five-phase rigid workflow (Read → Clarify → Reuse-hint → Work → Verify → Validate).
+- Three custom subagents (clarifier, verifier, code-reviewer).
+- The `template_verifier.py` PostToolUse hook.
+- Nine template-enforced artifact types (specs, clarification batches, verifier reports, decision records, etc.).
+- Ten supporting skills (`flow-feature`, `flow-fix`, `flow-refactor`, `run-clarifier`, `run-verifier`, `triviality-detector`, `reuse-hint`, `decision-log`, `template-check`, `archive`, plus `bootstrap-project` which is replaced by `wyvrn-refresh-context`).
+- `HARNESS.md`, `INDEX.md`, `DECISIONS.md`, and the `workflows/` folder.
 
-1. Copy the contents of `.claude-wyvrn/` into `~/.claude-wyvrn/`.
-2. On Windows this is typically `%USERPROFILE%\.claude-wyvrn\`.
-3. Verify: `~/.claude-wyvrn/VERSION` should exist and contain a version number.
+If you're upgrading from v1.x:
 
-All projects on this machine will share this harness. When a new harness version is released, update this one folder and every project picks it up.
+1. Run `claude-wyvrn uninstall` followed by `claude-wyvrn install` to replace the global harness at `~/.claude-wyvrn/`.
+2. In each project carrying v1.x artifacts, run `/migrate-foreign-framework` in Claude Code. It archives the removed v1.x folders (`features/`, `fixes/`, `refactors/`, `decisions/`, `clarifications/`, `reviews/`, `verifier-gaps/`, `.metrics/`) into `.claude-wyvrn-local/.archive/migration-<timestamp>/`. PROJECT.md, ARCHITECTURE.md, and `conventions/` are preserved in place.
 
-### Install project-template into a project (once per project)
+## Layout
 
-From the root of the project:
-
-1. Copy `CLAUDE.md` into the project root. 
-2. Copy the `.claude-wyvrn-local/` folder into the project root.
-3. Track both in git.
-4. Open `.claude-wyvrn-local/ARCHITECTURE.md` and fill it in for your project, or run `/bootstrap-project` to auto-draft `ARCHITECTURE.md` and `PROJECT.md` from the repo and confirm via session.
-5. Optionally add stack-specific conventions (see Customization below). For projects with a pre-existing `CLAUDE.md` or other ad-hoc Claude setup, run `/migrate-foreign-framework` instead — it harvests existing content into `PROJECT.md` and the appropriate harness slots.
-
-### CI
-
-CI needs the harness installed the same way as a developer machine. Before running any flow-based automation, install the harness at `~/.claude-wyvrn/` in the CI environment. The project-template files (`CLAUDE.md` and `.claude-wyvrn-local/`) come with the repo.
-
-## What you can do
-
-### Run a flow
-
-Three flow types:
-
-- `/flow-feature` — add new functionality.
-- `/flow-fix` — resolve a bug.
-- `/flow-refactor` — restructure code without changing behavior.
-
-Each flow reads its required context, asks clarifying questions through the active session, does the work autonomously, verifies the result, and closes with a verifier report. Phases and rules are in `~/.claude-wyvrn/workflows/WORKFLOW.md`.
-
-Each flow type has its own initial-prompt requirements. Check the flow file (`~/.claude-wyvrn/workflows/FEATURE.md`, `FIX.md`, or `REFACTOR.md`) before invocation.
-
-### Invoke utility skills directly
-
-Most of the time you'll only invoke the flow skills above. Each sub-step is also available standalone:
-
-- `/run-clarifier` — re-run clarification on an existing spec.
-- `/run-verifier` — re-verify a closed flow's artifacts.
-- `/template-check <artifact-path>` — check template compliance for one file.
-- `/decision-log` — manually log a decision record.
-- `/archive` — archive old validated or failed flows.
-- `/bootstrap-project` — draft `PROJECT.md` and `ARCHITECTURE.md` from the repo on a fresh install.
-- `/migrate-foreign-framework` — migrate a project with a hand-written `CLAUDE.md` or ad-hoc `.claude/` setup into the harness layout.
-
-### Customization
-
-Drop files into project territory to customize behavior without touching the global harness:
-
-- **`.claude-wyvrn-local/PROJECT.md`** — project specification. When present, agents read this instead of the root `README.md` for project context. Plays the role a hand-written `CLAUDE.md` plays in non-harness projects: domain context, gotchas, idioms, where things live. Auto-draft via `/bootstrap-project` on a fresh install, or hand-author using `~/.claude-wyvrn/templates/project.md`.
-- **`.claude-wyvrn-local/conventions/[stack].md`** — project-specific stack conventions. Overrides any matching global conventions. Use the template at `~/.claude-wyvrn/templates/conventions.md`.
-- **`.claude-wyvrn-local/ARCHITECTURE.md`** — project architecture. Seeded from the template. Fill in your modules, interfaces, and invariants before first use.
-
-Machine-wide stack conventions go into `~/.claude-wyvrn/conventions/` using the same template. These apply to every project on the machine and are typically maintained by whoever owns the harness install.
-
-### Validation mode
-
-Flows default to non-blocking validation: the flow closes on verifier success and you review the report asynchronously. If you prefer the flow to pause until you explicitly validate:
-
-- Per-flow: include `validation: blocking` in the initial prompt.
-- Project-wide default: declare it in `PROJECT.md`.
-
-## Folder map
-
-### Machine-wide (`~/.claude-wyvrn/`)
+### Machine-wide — `~/.claude-wyvrn/`
 
 | Path | Purpose |
 |---|---|
-| `HARNESS.md` | Agent rules. |
-| `INDEX.md` | Agent navigation map. |
-| `DECISIONS.md` | Decision procedure. |
-| `conventions/` | Universal and stack-specific rules. |
-| `workflows/` | Flow definitions. |
-| `templates/` | Templates for every artifact type. |
-| `agents/` | Subagent definitions. |
-| `skills/` | Invocable skills. |
-| `extensions/` | Drop-in extensions. Empty by default. |
+| `VERSION` | `2.0.0` |
+| `CLAUDE.md` | Template copied to project root by `claude-wyvrn setup`. |
+| `conventions/universal.md` | Universal code rules. |
+| `conventions/gitflow.md` | Branching and commit conventions. |
+| `conventions/<stack>.md` | Stack-specific rules (javascript, typescript, python, csharp, cpp, react). |
+| `templates/conventions.md` | Only template kept; used by `/wyvrn-refresh-context` when creating a new project stack-conventions file. |
+| `skills/flow/SKILL.md` | The single runbook. |
+| `skills/wyvrn-refresh-context/SKILL.md` | Populate/sync project-context files. |
+| `skills/migrate-foreign-framework/SKILL.md` | Migrate non-Wyvrn projects in. |
 
-### Per project
+### Per project — `.claude-wyvrn-local/`
 
 | Path | Purpose |
 |---|---|
-| `CLAUDE.md` | Entry point for the agent. |
-| `.claude-wyvrn-local/` | Your project's artifacts and overrides. Track in git. |
-| `.claude-wyvrn-local/ARCHITECTURE.md` | Your project architecture. Fill in before first use. |
-| `.claude-wyvrn-local/features/` | Feature specs. |
-| `.claude-wyvrn-local/fixes/` | Fix specs. |
-| `.claude-wyvrn-local/refactors/` | Refactor specs. |
-| `.claude-wyvrn-local/decisions/` | Decision records. |
-| `.claude-wyvrn-local/clarifications/` | Clarification batches. |
-| `.claude-wyvrn-local/reviews/` | Verifier reports. |
-| `.claude-wyvrn-local/verifier-gaps/` | Verifier gap reports. |
-| `.claude-wyvrn-local/conventions/` | Project-specific stack conventions (optional). |
-| `.claude-wyvrn-local/.archive/` | Archived artifacts. Off-limits to agents during flows. |
+| `PROJECT.md` | Project context, gotchas, idioms. Populated/synced by `/wyvrn-refresh-context`. |
+| `ARCHITECTURE.md` | Module map, invariants. Populated/synced by `/wyvrn-refresh-context`. |
+| `conventions/<stack>.md` | Project-specific stack conventions (overrides global on conflict). Optional. |
+| `plans/` | Learning logs from each `/flow` run. Created on first run. Not auto-loaded into sessions. |
+
+Track `.claude-wyvrn-local/` in git.
+
+## Install and setup
+
+The `claude-wyvrn` CLI handles install and setup. The global side of v1.x → v2.0.0 migration runs via `claude-wyvrn uninstall` + `claude-wyvrn install`; per-project migration runs via `/migrate-foreign-framework` (see below). From any machine:
+
+```
+claude-wyvrn install         # caches this repository and installs ~/.claude-wyvrn/ plus the skill registrations in Claude Code
+claude-wyvrn setup           # in a project directory: lays down .claude-wyvrn-local/ and the project-root CLAUDE.md
+```
+
+If `claude-wyvrn setup` detects a foreign Claude framework (hand-written `CLAUDE.md`, `CONTEXT.md`, etc. at the project root), it prompts you to run `/migrate-foreign-framework` in Claude Code to harvest the content. The local `./.claude/` folder (Claude Code's own settings) is left alone — it is not part of Wyvrn.
+
+If `claude-wyvrn` detects a v1.x install on `install`, it runs `uninstall` first (with a backup) and then installs v2.0.0 fresh. Per-project artifact migration is then handled by `/migrate-foreign-framework` in Claude Code.
+
+The CLI itself is maintained separately from this repository.
+
+## How `/flow` works
+
+```
+/flow <your task>
+
+  Step 1   Read context (universal.md, gitflow.md, PROJECT.md, ARCHITECTURE.md)
+           Retrieve relevant past mistakes from .claude-wyvrn-local/plans/
+           Enter plan mode
+
+  Step 2   Ask: follow gitflow? If yes, switch to the appropriate branch.
+                              If already on it, proceed silently.
+                              If no, stay on the current branch.
+
+  Step 3   Ask only what cannot be inferred (goal, scope, acceptance, constraints).
+           One batched AskUserQuestion call.
+
+  Step 4   Confidence gate. Loop back to Step 3 until 95%+ confident. No cap.
+
+  Step 5   Plan review (opt-in via PROJECT.md: plan-review: on). Default off.
+
+  Step 6   Implement. Strict conventions.
+
+  Step 7   Tests for executable-code changes. Run affected tests.
+
+  Step 8   Self-verify against goals + tests + scope. Loop back to Step 7 if needed.
+
+  Step 9a  Write a learning log to .claude-wyvrn-local/plans/.
+  Step 9b  If a mistake or project change warrants a project-file update,
+           invoke /wyvrn-refresh-context.
+
+  Step 10  Push? (only if gitflow was followed in Step 2)
+```
+
+## Customization
+
+- **`.claude-wyvrn-local/PROJECT.md`** — project specification. Domain context, gotchas, idioms, where things live. Auto-drafted via `/wyvrn-refresh-context` on a fresh install. Used by `/flow` as project context.
+- **`.claude-wyvrn-local/conventions/<stack>.md`** — project-specific stack conventions. Overrides any matching global conventions per `universal.md` §3. Use `~/.claude-wyvrn/templates/conventions.md` as the starting template (or let `/wyvrn-refresh-context` create it).
+- **`.claude-wyvrn-local/ARCHITECTURE.md`** — module map and invariants. Auto-drafted via `/wyvrn-refresh-context` from the codebase.
+- **Plan review pause** — declare `plan-review: on` in PROJECT.md to make `/flow` pause for plan approval before implementation. Default `off`.
+
+Machine-wide conventions go in `~/.claude-wyvrn/conventions/` and apply to every project on the machine. Typically maintained by whoever owns the harness install.
 
 ## What not to do
 
-- **Don't edit files under `~/.claude-wyvrn/`** directly unless you're updating the machine-wide harness intentionally. To customize for one project, use `.claude-wyvrn-local/` overrides.
-- **Don't hand-write artifacts.** Artifacts come from templates through flows. Writing them by hand bypasses template compliance and verification.
-- **Don't answer agent questions by editing artifact files.** The agent asks through the session; you answer through the session. Agents record your answers in the artifacts.
-- **Don't skip the verifier.** A flow is not complete without a successful verifier pass.
-- **Don't expand flow scope mid-flow.** If you realize you want more, either let the current flow close and start a new one, or respond to the out-of-scope prompt when it appears.
-
-## Where to learn more
-
-The files under `~/.claude-wyvrn/` are the authoritative reference. They're written for agents but are also readable by humans. In order of usefulness for a dev who wants to understand the system:
-
-1. `~/.claude-wyvrn/HARNESS.md` — the rules agents follow.
-2. `~/.claude-wyvrn/workflows/WORKFLOW.md` — what happens during a flow.
-3. `~/.claude-wyvrn/DECISIONS.md` — how agents classify decisions and when they stop to ask.
-4. `~/.claude-wyvrn/conventions/CONVENTIONS.md` — how agents produce code and artifacts.
-5. `~/.claude-wyvrn/INDEX.md` — the map of where everything lives.
-
-Individual flow types, agents, and skills have their own files under `workflows/`, `agents/`, and `skills/`.
+- **Don't edit files under `~/.claude-wyvrn/`** directly during a flow. The global harness is read-only during flows. Mistakes whose root cause is in the global harness should be logged and surfaced to the user; the user updates the global harness manually.
+- **Don't hand-write learning logs.** They are produced by `/flow`. Writing them by hand bypasses the retrieval mechanism (greping by file/stack/keyword) and obscures the audit trail.
+- **Don't expand `/flow` scope mid-flow.** If the work grows, finish the current flow and start a new one.
 
 ## Version
 
-See `~/.claude-wyvrn/VERSION` for the installed harness version.
+See `~/.claude-wyvrn/VERSION` for the installed harness version. Current: `2.0.0`.

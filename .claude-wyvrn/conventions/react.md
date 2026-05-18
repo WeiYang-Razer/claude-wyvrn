@@ -40,10 +40,10 @@
 - Path aliases (`@features`, `@components/ui`, `@hooks`, `@atoms`, `@entities`, `@builders`, `@utils`, `@pages`, `@routes`, `@api`, `@assets`, `@types`, plus per-feature aliases) are mandatory for cross-folder imports. Relative paths only within the same component folder.
 - Adding a path alias updates `tsconfig.app.json`, the test tsconfig, and the bundler config (Vite/Webpack) in the same change.
 - No `export default` in `src/features/**`, `src/hooks/**`, `src/components/**`, or any `index.ts`. Named exports only. Index files use `export * from './<Name>'`.
-- Stack baseline: React 19, react-router 7, react-hook-form 7, Tailwind 4, Vite 6, Vitest 3, ESLint 9, Jotai 2, TanStack Query 5, TypeScript 5, `class-variance-authority`, HeroIcons, shadcn/ui. Alternatives for the same role require a decision record per `CONVENTIONS.md` §2.3.
+- Stack baseline: React 19, react-router 7, react-hook-form 7, Tailwind 4, Vite 6, Vitest 3, ESLint 9, Jotai 2, TanStack Query 5, TypeScript 5, `class-variance-authority`, HeroIcons, shadcn/ui. Alternatives for the same role require explicit user confirmation per `universal.md` §1.3.
 - Accessible interactive primitives (Dialog, DropdownMenu, Select, Popover, Tabs, Accordion, Tooltip, Switch, Checkbox, Combobox, RadioGroup) consumed from the shadcn/ui layer. Raw Radix UI primitives are not used outside that layer.
 - Icons from `@heroicons/react` first. Custom SVG icons only when HeroIcons has no equivalent; custom icons follow the same `cva` + token rules and include `aria-hidden="true"` when decorative.
-- Environment variables via `import.meta.env`, prefixed `REACT_APP_` (core) or `PUBLIC_` (client-exposed). Centralized in a config module per `CONVENTIONS.md` §3.5.
+- Environment variables via `import.meta.env`, prefixed `REACT_APP_` (core) or `PUBLIC_` (client-exposed). Centralized in a config module per `universal.md` §2.5.
 
 ## Styling
 
@@ -78,7 +78,7 @@
 
 - All testing rules from `typescript.md` apply.
 - Behavior tests only: assert on what the user sees and what user interactions produce. Do not assert on internal state, hook return shape, or implementation details.
-- Every component, hook, entity, builder, and atom ships with its behavior test in the same change. A source file without its test is incomplete per `CONVENTIONS.md` §2.6.
+- Every component, hook, entity, builder, and atom ships with its behavior test in the same change. A source file without its test is incomplete per `universal.md` §1.6.
 - Queries: prefer `getByRole` with accessible name; fall back to `getByLabelText`, `getByText`. Avoid `getByTestId` unless no accessible query works.
 - Interactions via `userEvent`, not `fireEvent`, except for low-level events `userEvent` does not model.
 - Mock TanStack Query and Jotai providers via the project's test setup, not via per-test global stubs.
