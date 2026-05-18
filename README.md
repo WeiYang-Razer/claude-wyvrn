@@ -2,9 +2,9 @@
 
 A lean, opinionated structure that lets Claude Code run development work autonomously, predictably, and **fast**.
 
-v2 replaces v1's five-phase orchestration (clarifier subagent → reuse-hint → work → verifier + code-reviewer subagents → validate, with template-verified artifacts at every step) with **one `/flow` skill** that runs the whole task inline. Target time per task drops from 20–25 min to **3–7 min** for simple work and 8–15 min for medium work.
+v2.0.0 replaces v1.x's five-phase orchestration (clarifier subagent → reuse-hint → work → verifier + code-reviewer subagents → validate, with template-verified artifacts at every step) with **one `/flow` skill** that runs the whole task inline. Target time per task drops from 20–25 min to **3–7 min** for simple work and 8–15 min for medium work.
 
-## What's in v2
+## What's in v2.0.0
 
 - **One `/flow` skill** — single runbook for feature/fix/refactor. Plan-first. Asks only what it can't infer. Implements with tests. Self-verifies. Writes a learning log. Offers to push.
 - **`/wyvrn-refresh-context` skill** — populates and syncs `.claude-wyvrn-local/PROJECT.md`, `ARCHITECTURE.md`, and project-specific conventions from the codebase. Also absorbs lessons from /flow mistakes.
@@ -12,7 +12,7 @@ v2 replaces v1's five-phase orchestration (clarifier subagent → reuse-hint →
 - **Conventions** — universal + gitflow + six stacks (JavaScript, TypeScript, Python, C#, C++, React).
 - **Learning logs** — every /flow run writes a free-form markdown summary to `.claude-wyvrn-local/plans/` focused on mistakes Claude made and how the human corrected them. /flow retrieves relevant past logs when starting similar tasks.
 
-## What v2 dropped (breaking change from v1)
+## What v2.0.0 dropped (breaking change from v1.x)
 
 - The five-phase rigid workflow (Read → Clarify → Reuse-hint → Work → Verify → Validate).
 - Three custom subagents (clarifier, verifier, code-reviewer).
@@ -21,7 +21,10 @@ v2 replaces v1's five-phase orchestration (clarifier subagent → reuse-hint →
 - Ten supporting skills (`flow-feature`, `flow-fix`, `flow-refactor`, `run-clarifier`, `run-verifier`, `triviality-detector`, `reuse-hint`, `decision-log`, `template-check`, `archive`, plus `bootstrap-project` which is replaced by `wyvrn-refresh-context`).
 - `HARNESS.md`, `INDEX.md`, `DECISIONS.md`, and the `workflows/` folder.
 
-If you're upgrading from v1.x, run `claude-wyvrn uninstall` followed by `claude-wyvrn install`. v1 project artifacts under `.claude-wyvrn-local/{features,fixes,refactors,decisions,clarifications,reviews,verifier-gaps}/` remain readable for reference but are no longer produced.
+If you're upgrading from v1.x:
+
+1. Run `claude-wyvrn uninstall` followed by `claude-wyvrn install` to replace the global harness at `~/.claude-wyvrn/`.
+2. In each project carrying v1.x artifacts, run `/migrate-foreign-framework` in Claude Code. It archives the removed v1.x folders (`features/`, `fixes/`, `refactors/`, `decisions/`, `clarifications/`, `reviews/`, `verifier-gaps/`, `.metrics/`) into `.claude-wyvrn-local/.archive/migration-<timestamp>/`. PROJECT.md, ARCHITECTURE.md, and `conventions/` are preserved in place.
 
 ## Layout
 
@@ -52,7 +55,7 @@ Track `.claude-wyvrn-local/` in git.
 
 ## Install and setup
 
-The `claude-wyvrn` CLI handles install, setup, and the v1→v2 migration. From any machine:
+The `claude-wyvrn` CLI handles install and setup. The global side of v1.x → v2.0.0 migration runs via `claude-wyvrn uninstall` + `claude-wyvrn install`; per-project migration runs via `/migrate-foreign-framework` (see below). From any machine:
 
 ```
 claude-wyvrn install         # caches this repository and installs ~/.claude-wyvrn/ plus the skill registrations in Claude Code
@@ -61,7 +64,7 @@ claude-wyvrn setup           # in a project directory: lays down .claude-wyvrn-l
 
 If `claude-wyvrn setup` detects a foreign Claude framework (hand-written `CLAUDE.md`, `CONTEXT.md`, etc. at the project root), it prompts you to run `/migrate-foreign-framework` in Claude Code to harvest the content. The local `./.claude/` folder (Claude Code's own settings) is left alone — it is not part of Wyvrn.
 
-If `claude-wyvrn` detects a v1.x install on `install`, it runs `uninstall` first (with a backup) and then installs v2 fresh.
+If `claude-wyvrn` detects a v1.x install on `install`, it runs `uninstall` first (with a backup) and then installs v2.0.0 fresh. Per-project artifact migration is then handled by `/migrate-foreign-framework` in Claude Code.
 
 The CLI itself is maintained separately from this repository.
 
