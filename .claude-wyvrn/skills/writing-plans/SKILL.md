@@ -7,11 +7,14 @@ description: Break a feature or task into a sequence of 2-5 minute atomic steps,
 
 Decomposes a feature into a concrete, reviewable sequence of atomic tasks. Each task is small enough to implement and verify in one short session. The output is a plan file in `.claude-wyvrn-local/plans/` — the same directory `/flow` already retrieves for past-mistake context.
 
+**Standalone by design.** This skill works on its own. If an approved spec exists in `.claude-wyvrn-local/specs/`, it is used as authoritative input. If no spec exists, the plan is drafted directly from the user's prompt + project context. `/brainstorm` is never required.
+
 ## Execution principles
 
 - Parallelize independent reads at Step 1.
 - No implementation — plan only. The plan is the hand-off to `/flow` or `subagent-dev`.
 - Tasks must be atomic and independently verifiable. No "implement everything, then test".
+- Spec-optional: a matching spec sharpens scope, but its absence does not block planning.
 
 ## Preconditions
 
@@ -28,21 +31,22 @@ If `~/.claude-wyvrn/VERSION` missing → halt: `Wyvrn harness not installed. Run
 
 Read in one parallel batch:
 
-- `.claude-wyvrn-local/PROJECT.md` if present, else `README.md`
-- `.claude-wyvrn-local/ARCHITECTURE.md` if present
-- `.claude-wyvrn-local/specs/` — list files, read any whose slug matches the feature topic (top 1–2). A matching approved spec is the primary input; treat it as authoritative for scope and acceptance criteria.
+- `.claude-wyvrn-local/PROJECT.md` if present, else `README.md` if present (skip silently if neither exists)
+- `.claude-wyvrn-local/ARCHITECTURE.md` if present (skip silently if missing)
+- `.claude-wyvrn-local/specs/` — list files and read any whose slug matches the feature topic (top 1–2). A matching approved spec, when present, is treated as authoritative for scope and acceptance criteria. **If no spec is found, proceed without one — do not prompt the user to brainstorm.**
 - Relevant stack conventions if the target stack is known.
 
-If no spec exists and the feature is complex or uncertain → recommend `/brainstorm <topic>` first. AskUserQuestion header `No spec found`, options `[Continue without spec, Run /brainstorm first, Abort]`.
+The user's prompt is always the primary input. A spec sharpens the prompt; its absence is not a blocker.
 
 ### Step 2 — Clarify scope (if needed)
 
-Ask only what cannot be inferred:
+Ask only what cannot be inferred from the prompt + loaded context:
 
 - **Feature boundary** — what is in scope, what is explicitly out.
 - **Order constraints** — any tasks that must precede others beyond what's obvious.
+- **Acceptance signal** — how the user will know the feature works (skip if a spec already defines this).
 
-Batch into one AskUserQuestion call. Skip entirely if scope is clear from prompt + context.
+Batch into one AskUserQuestion call. Skip entirely if scope is clear from prompt + context. Do not ask "should we brainstorm first" — that is not this skill's concern.
 
 ### Step 3 — Draft task list
 
@@ -80,7 +84,7 @@ File format:
 ```markdown
 # Plan: <feature title>
 date: YYYY-MM-DD
-spec: <path to spec file, or "none">
+spec: <path to spec file, or omit this line entirely if no spec>
 status: pending
 
 ## Task 1: <title>
@@ -105,7 +109,7 @@ Next: run /flow referencing each task, or /subagent-dev <plan-file> to execute w
 ## Stop conditions
 
 - User aborts at any step → halt, no file written.
-- Feature is too vague to decompose → request `/brainstorm` first rather than producing a vague plan.
+- Feature is too vague to decompose → ask one round of clarifying questions in Step 2. If still vague after clarification, halt and tell the user the prompt is too ambiguous to plan against (do not produce a vague plan, but do not require any specific upstream skill either).
 
 ## Constraints
 
