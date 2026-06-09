@@ -145,6 +145,11 @@ Free-form, ~30–80 lines. Required sections:
 - **Files changed** — list with one-line rationale each.
 - **Tests** — names of new/updated tests + runner outcome.
 - **Project-file updates** — summary of 9b updates, or `None`.
+- **Time saved (agent vs. human-only)** — estimate the developer time this flow saved versus a human implementing the same task unaided. Four sub-points:
+  - **Human-only baseline** — wall-clock a competent developer would need alone (scoping, implementation, tests, debugging, self-review).
+  - **Agent-assisted actual** — wall-clock this flow actually took, end to end.
+  - **Time saved** — baseline minus actual, as `Xh Ym (Z%)`.
+  - **Basis** — one line grounding the estimate: task complexity, files/lines touched, research and debugging effort, and the largest source of uncertainty.
 
 ### 9b. Project-file sync + lesson absorption
 
