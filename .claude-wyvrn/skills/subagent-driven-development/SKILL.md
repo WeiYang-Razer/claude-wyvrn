@@ -1,11 +1,11 @@
 ---
 name: subagent-dev
-description: Execute implementation work through subagents instead of inline — the main agent is orchestrator and verifier, subagents do the building. Use for context isolation, a clean review boundary, or to run a /write-plan plan file task-by-task. Trigger when the user says "use a subagent to", "delegate this", "implement with subagents", or invokes /subagent-dev <plan-file> directly.
+description: Execute implementation work through subagents instead of inline — the main agent is orchestrator and verifier, subagents do the building. Use for context isolation, a clean review boundary, or to run a /write-plan plan file task-by-task (or wave-by-wave in parallel worktrees when the plan carries an Execution schedule). Trigger when the user says "use a subagent to", "delegate this", "implement with subagents", or invokes /subagent-dev <plan-file> directly.
 ---
 
 # subagent-dev
 
-Implements a task (or a whole `/write-plan` plan file) by dispatching subagents to do the building while the main agent owns decomposition, verification, and git. Keeps the main context clean — a subagent's exploration and dead-ends never pollute the orchestrator's window — and creates a hard review boundary at every hand-back.
+Implements a task (or a whole `/write-plan` plan file) by dispatching subagents to do the building while the main agent owns decomposition, verification, and git. Keeps the main context clean — a subagent's exploration and dead-ends never pollute the orchestrator's window — and creates a hard review boundary at every hand-back. When the plan file carries an `## Execution schedule`, execution is wave-based: each wave's tasks run concurrently in isolated git worktrees, and the wave is gated on a build+test of the merged result before the next wave starts.
 
 **Standalone by design.** This is a different execution mode from `/flow`: `/flow` runs inline with no custom subagents; `subagent-dev` deliberately delegates. It is never injected into `/flow`.
 
@@ -14,7 +14,7 @@ Implements a task (or a whole `/write-plan` plan file) by dispatching subagents 
 - **Trust but verify.** A subagent's summary is a claim about what it intended, not proof of what it did. The orchestrator re-reads the actual diff and runs the tests before accepting any task.
 - **Self-contained briefs.** A subagent has none of this conversation's context. Every brief must stand alone: goal, files, change spec, tests, conventions, and what to report back.
 - **One task per subagent** unless two tasks are too coupled to separate. Independent tasks may fan out (hand to `/parallel-agents`); dependent tasks run sequentially with results fed forward.
-- The orchestrator — not the subagents — owns gitflow, commits, and the final verdict.
+- The orchestrator — not the subagents — owns gitflow, merges, and the final verdict. One exception: in wave mode, each task agent executes its task's plan-specified commit step on its own worktree branch (parallel agents cannot share a working tree); the orchestrator still owns the integration branch, all merges, and any push.
 
 ## Preconditions
 
@@ -41,6 +41,8 @@ Read these in one parallel batch. No code yet.
 
 Mark each task's dependencies. Tasks with no unmet dependency on a sibling are **parallel-eligible**; the rest are **sequential**.
 
+**Schedule adoption:** if the plan file contains an `## Execution schedule` section, adopt it verbatim — its waves are authoritative for what may run concurrently, and execution uses the wave dispatch mode in Step 4. Do not re-derive or second-guess the schedule; if it is visibly wrong (two same-wave tasks touch the same file, a task's `Depends on:` names a task in the same or a later wave), halt and surface the plan defect instead of silently re-serializing. A plan without a schedule, or a free-form task, uses the dependency marking above and the sequential/parallel-eligible modes.
+
 ### Step 3 — Write each brief
 
 Each brief is self-contained and includes:
@@ -57,8 +59,15 @@ Each brief is self-contained and includes:
 
 - **Sequential chain:** dispatch one subagent, verify (Step 5), feed its result into the next brief, dispatch the next. Use `subagent_type: general-purpose` for implementation.
 - **Parallel-eligible set:** dispatch them concurrently — hand off to `/parallel-agents`, or issue multiple `Agent` calls in a single message. Use `Explore` for research-only units.
+- **Wave dispatch (plan file with an Execution schedule):** process waves strictly in order.
+  1. For the current wave, dispatch every task in a single message — one `Agent` call per task with `isolation: worktree` and `subagent_type: general-purpose`. Each brief carries the task's full plan steps *including its commit step*: the agent runs TDD and commits on its own worktree branch.
+  2. A single-task wave may skip the worktree and run in the main working tree — cheaper, and its commit lands directly on the plan branch.
+  3. As each agent returns, verify it per Step 5 against its worktree branch (read the branch diff, run the task's tests in that worktree).
+  4. When every task in the wave is verified, merge the wave's task branches into the plan branch in task-number order. A merge conflict here means the plan's file-disjointness claim was wrong — halt and surface it as a plan defect; do not hand-resolve silently.
+  5. **Wave gate:** on the merged plan branch, run the full build plus the affected tests of every task in the wave. Each agent verified in isolation; the merge is where integration breaks surface. Green unlocks the next wave. On failure, diagnose on the merged tree and either fix forward or re-dispatch the offending task with corrective notes, then re-run the gate.
+  6. Remove merged task worktrees and branches before starting the next wave.
 
-Never dispatch interdependent tasks in parallel — a later task built on a sibling's not-yet-verified output will drift.
+Never dispatch interdependent tasks in parallel — a later task built on a sibling's not-yet-verified output will drift. Parallel dispatch is allowed only within one wave of the plan's schedule, or within a self-derived parallel-eligible set.
 
 ### Step 5 — Verify each result (trust but verify)
 
@@ -72,7 +81,7 @@ If it deviated, was incomplete, or tests fail → re-dispatch the same task with
 
 ### Step 6 — Integrate + finalize
 
-1. Resolve any cross-task conflicts in the main thread.
+1. Resolve any cross-task conflicts in the main thread. (Wave mode: conflicts are impossible by construction — same-wave tasks have disjoint file sets. If one appears anyway, treat it as a plan defect per Step 4, not something to hand-resolve.)
 2. Run the full affected test set once, in parallel where independent.
 3. Apply the `/verify-done` evidence gate before declaring complete.
 4. Gitflow/commit/push are the orchestrator's job and stay gated — do not commit or push unless the user asked (mirrors `/flow` Step 10).
@@ -91,6 +100,7 @@ If the run surfaced mistakes worth recording, write `.claude-wyvrn-local/plans/Y
 
 - Never accept a subagent's work without independently verifying the actual diff and running the tests (trust but verify).
 - Briefs must be fully self-contained — subagents cannot see this conversation.
-- Do not dispatch interdependent tasks in parallel.
-- Do not commit or push unless the user explicitly asks.
+- Do not dispatch interdependent tasks in parallel. Parallel dispatch only within a single wave of the plan's Execution schedule, or within a self-derived parallel-eligible set.
+- In wave mode: never merge an unverified task branch, and never start wave K+1 before wave K's gate is green.
+- Do not commit or push unless the user explicitly asks. Executing a plan file counts as asking for the plan's own per-task commit steps; pushing still requires an explicit ask.
 - Do not modify `~/.claude-wyvrn/`.
