@@ -1,0 +1,4 @@
+# SDD helper scripts are bash — force LF endings so they run under Git Bash on
+# Windows and natively on Unix regardless of the machine's core.autocrlf setting.
+# CRLF in a #! script breaks the interpreter line ("bad interpreter").
+* text eol=lf
