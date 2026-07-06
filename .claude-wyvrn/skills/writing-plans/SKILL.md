@@ -148,9 +148,10 @@ Run the five Self-Review checks against the drafted plan **before** emitting it 
 
 ### Step 4 — Review
 
-Emit the full plan (header + tasks + closing sections, **including the completed Self-Review**) as a chat message. AskUserQuestion header `Plan`, options `[Save plan, Refine, Abort]`.
+Emit the full plan (header + tasks + closing sections, **including the completed Self-Review**) as a chat message. AskUserQuestion header `Plan`, options `[Save plan, Save plan & run subagent-dev, Refine, Abort]`.
 
 - `Save plan` → Step 5.
+- `Save plan & run subagent-dev` → Step 5, then chain into `/subagent-dev` (see Step 5).
 - `Refine` (or "Other" + text) → incorporate feedback, re-run the Step 3d gate, re-emit, repeat Step 4.
 - `Abort` → halt. Do not write any file.
 
@@ -270,6 +271,8 @@ Plan written and committed: .claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md
 Tasks: N   Steps: M   Waves: K
 Next: /subagent-dev <plan-file> to execute with subagents (parallel waves where the schedule allows), or /flow referencing each task.
 ```
+
+If the user chose `Save plan & run subagent-dev` at Step 4: after emitting, invoke the `subagent-driven-development` skill (`/subagent-dev`) with the written plan file path. This skill's no-implementation constraints end at that hand-off; `/subagent-dev` runs under its own rules and does implement.
 
 ## Stop conditions
 
