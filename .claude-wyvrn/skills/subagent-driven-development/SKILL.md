@@ -43,7 +43,7 @@ Per task, run this cycle:
 3. The implementer **implements, tests, commits, self-reviews, writes its report file**, and returns a status.
 4. **Handle the status** (see Handling implementer status). On DONE, write the review package and dispatch the task reviewer (`task-reviewer-prompt.md`).
 5. **Fix loop:** if the reviewer reports Critical/Important findings, dispatch a fix subagent, then re-review. Log Minor findings to the ledger for the final review.
-6. When the reviewer reports spec ✅ and quality approved, **mark the task complete** in the progress ledger and move to the next task (or wave).
+6. When the reviewer reports spec ✅ and quality approved, **mark the task complete**: append it to the progress ledger AND flip every one of the task's `- [ ]` steps to `- [x]` in the plan file. Then move to the next task (or wave).
 
 When all tasks are complete, dispatch one **broad whole-branch review**, apply the `/verify-done` gate, then finalize per gitflow.
 
@@ -119,7 +119,7 @@ For every returned task, before accepting it:
 
 1. **Orchestrator verify.** Re-read the **actual diff** for the files the brief named — do not rely on the report. Run the affected tests yourself; confirm pass. Confirm the change matches the brief and conventions and stayed inside its file scope.
 2. **Task review.** Run `review-package BASE HEAD` (BASE = the task's recorded base, HEAD = its tip) and dispatch a task-reviewer subagent via `task-reviewer-prompt.md`, passing the brief, report, and review-package paths plus the binding constraints. It gates spec compliance + code quality.
-3. **Resolve.** Dispatch a fix subagent for Critical/Important findings, then re-review; never accept on the report alone. Log Minor findings to the ledger for the final review. When spec ✅ and quality approved, append the task to the ledger.
+3. **Resolve.** Dispatch a fix subagent for Critical/Important findings, then re-review; never accept on the report alone. Log Minor findings to the ledger for the final review. When spec ✅ and quality approved, append the task to the ledger and flip the task's `- [ ]` steps to `- [x]` in the plan file (main working tree — worktree agents never touch the plan file; checkbox updates are the orchestrator's job).
 
 ## Handling implementer status
 
@@ -173,7 +173,7 @@ Everything you paste into a dispatch prompt — and everything a subagent prints
 Conversation memory does not survive compaction. Controllers that lost their place have re-dispatched entire completed task sequences — an expensive failure. Track progress in a ledger file, not only in todos. The ledger lives at `.claude-wyvrn-local/sdd/progress.md`.
 
 - At skill start, check for a ledger: `cat "$(git rev-parse --show-toplevel)/.claude-wyvrn-local/sdd/progress.md"`. Tasks listed there as complete are DONE — do not re-dispatch them; resume at the first task not marked complete.
-- When a task's review comes back clean, append one line in the same message as your other bookkeeping: `Task N: complete (commits <base7>..<head7>, review clean)`.
+- When a task's review comes back clean, append one line in the same message as your other bookkeeping: `Task N: complete (commits <base7>..<head7>, review clean)` — and in the same message, flip that task's checkboxes to `- [x]` in the plan file. The plan file's checkboxes are the user-visible progress; the ledger is the recovery map. A task whose boxes are still `- [ ]` after its commit landed is a bookkeeping bug.
 - The ledger is your recovery map: the commits it names exist in git even when your context no longer remembers creating them. After compaction, trust the ledger and `git log` over your own recollection.
 - The workspace is git-ignored scratch (a self-ignoring `.gitignore`); `git clean -fdx` will destroy the ledger. If that happens, recover from `git log`.
 
@@ -206,7 +206,7 @@ You: "User level (~/.config/…)."
 Implementer: DONE — install-hook implemented, 5/5 tests passing, self-review added --force, committed.
 [review-package BASE HEAD → path; dispatch task reviewer]
 Task reviewer: Spec ✅ — all requirements met, nothing extra. Issues: none. Approved.
-[Append "Task 1: complete (…, review clean)" to the ledger]
+[Append "Task 1: complete (…, review clean)" to the ledger; flip Task 1's steps to [x] in the plan file]
 
 Task 2: Recovery modes
 [task-brief PLAN 2 → path; dispatch implementer]
@@ -216,7 +216,7 @@ Task reviewer: Spec ❌ — Missing progress reporting; Extra --json flag. Impor
 [Dispatch ONE fix subagent with all findings]
 Fixer: removed --json, added progress reporting, extracted PROGRESS_INTERVAL. Tests re-run, passing.
 [Re-review] Task reviewer: Spec ✅. Approved.
-[Append "Task 2: complete" to the ledger]
+[Append "Task 2: complete" to the ledger; flip Task 2's steps to [x] in the plan file]
 
 ...
 
@@ -242,6 +242,7 @@ Final reviewer: All requirements met, ready to merge.
 - Dispatch a task reviewer without a diff file — generate it first (`review-package BASE HEAD`) and name the printed path.
 - Move to the next task while the review has open Critical/Important issues.
 - Re-dispatch a task the progress ledger already marks complete — check the ledger (and `git log`) after any compaction or resume.
+- Mark a task complete in the ledger without also flipping its `- [ ]` steps to `- [x]` in the plan file.
 
 **If a subagent asks questions:** answer clearly and completely, provide context, don't rush them into implementation.
 
