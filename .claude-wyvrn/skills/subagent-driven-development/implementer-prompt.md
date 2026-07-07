@@ -47,7 +47,9 @@ Subagent (general-purpose):
        executable code (failing test first, then implement)
     3. Verify implementation works
     4. Commit your work [only if the brief's steps say to — in wave mode, commit
-       on your worktree branch exactly as the brief specifies]
+       on your worktree branch exactly as the brief specifies]. Use a single
+       `-m` message. Do NOT append a `Co-Authored-By` trailer, a "Generated
+       with" footer, or any other trailer.
     5. Self-review (see below)
     6. Report back
 

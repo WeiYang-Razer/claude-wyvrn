@@ -250,10 +250,22 @@ struct/API shapes, ordering semantics. When nothing applies:
 - **Dependency audit:** <graph acyclic + numbering topological; every consumed symbol → a declared dependency; same-wave tasks have disjoint file sets ✓>
 ````
 
+Then commit the plan file on the current branch:
+
+```bash
+git add .claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md
+git commit -m "docs(plans): add <slug> implementation plan"
+```
+
+- `git add` lists only the plan file — never `git add -A`.
+- The message follows `gitflow.md` §3.
+- A single `-m` line only. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
+- Commit on the current branch. Do not create branches, push, or open PRs.
+
 Emit:
 
 ```
-Plan written: .claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md
+Plan written and committed: .claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md
 
 Tasks: N   Steps: M   Waves: K
 Next: /subagent-dev <plan-file> to execute with subagents (parallel waves where the schedule allows), or /flow referencing each task.
@@ -268,6 +280,7 @@ Next: /subagent-dev <plan-file> to execute with subagents (parallel waves where 
 
 - Do NOT produce implementation code in the working tree. The plan *contains* exact code to write, but this skill does not apply it.
 - Do NOT modify source files, configs, or anything outside `.claude-wyvrn-local/plans/`.
+- The only permitted git operations are the Step 5 `git add` + `git commit` of the plan file.
 - Do NOT modify `~/.claude-wyvrn/`.
 - Do NOT invent a test harness the project does not have — honor the Testing note from Step 3a.
 - All confirmations via `AskUserQuestion`.

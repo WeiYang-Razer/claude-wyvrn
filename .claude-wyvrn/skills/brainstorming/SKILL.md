@@ -91,10 +91,22 @@ topic: <topic>
 ---
 ```
 
+Then commit the spec file on the current branch:
+
+```bash
+git add .claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md
+git commit -m "docs(specs): add <slug> design spec"
+```
+
+- `git add` lists only the spec file — never `git add -A`.
+- The message follows `gitflow.md` §3.
+- A single `-m` line only. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
+- Commit on the current branch. Do not create branches, push, or open PRs.
+
 Emit:
 
 ```
-Spec written: .claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md
+Spec written and committed: .claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md
 
 Next: run /flow or /write-plan referencing this spec.
 ```
@@ -108,5 +120,6 @@ Next: run /flow or /write-plan referencing this spec.
 
 - Do NOT produce implementation code at any step.
 - Do NOT modify source files, configs, or anything outside `.claude-wyvrn-local/specs/`.
+- The only permitted git operations are the Step 6 `git add` + `git commit` of the spec file.
 - Do NOT modify `~/.claude-wyvrn/`.
 - All confirmations via `AskUserQuestion`.

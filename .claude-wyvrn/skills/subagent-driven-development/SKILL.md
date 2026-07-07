@@ -264,6 +264,7 @@ Final reviewer: All requirements met, ready to merge.
 - Do not dispatch interdependent tasks in parallel. Parallel dispatch only within a single wave of the plan's Execution schedule, each task worktree-isolated.
 - In wave mode: never merge an unverified task branch, and never start wave K+1 before wave K's gate is green.
 - Do not commit or push unless the user explicitly asks. Executing a plan file counts as asking for the plan's own per-task commit steps; pushing still requires an explicit ask.
+- Every commit — the orchestrator's and every subagent's — uses a single `-m` message per `gitflow.md` §3. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
 - Do not modify `~/.claude-wyvrn/`.
 
 ## Integration
