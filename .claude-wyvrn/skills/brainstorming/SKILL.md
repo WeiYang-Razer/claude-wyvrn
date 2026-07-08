@@ -71,9 +71,10 @@ Required sections:
 
 ### Step 5 — Spec review
 
-Emit the full draft spec as a chat message. AskUserQuestion header `Spec`, options `[Approve, Refine, Abort]`.
+Emit the full draft spec as a chat message. AskUserQuestion header `Spec`, options `[Approve, Approve & write plan, Refine, Abort]`.
 
 - `Approve` → Step 6.
+- `Approve & write plan` → Step 6, then chain into `/write-plan` (see Step 6).
 - `Refine` (or "Other" + text) → incorporate feedback, re-emit, repeat Step 5.
 - `Abort` → halt. Do not write any file.
 
@@ -110,6 +111,8 @@ Spec written and committed: .claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.m
 
 Next: run /flow or /write-plan referencing this spec.
 ```
+
+If the user chose `Approve & write plan` at Step 5: after emitting, invoke the `writing-plans` skill (`/write-plan`) with the written spec path as the feature input. This skill's constraints end at that hand-off; `/write-plan` runs under its own rules.
 
 ## Stop conditions
 
