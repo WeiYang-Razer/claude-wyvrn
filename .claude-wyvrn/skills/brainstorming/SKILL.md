@@ -71,7 +71,7 @@ Required sections:
 
 ### Step 5 — Spec review
 
-Emit the full draft spec as a chat message. AskUserQuestion header `Spec`, options `[Approve, Approve & write plan, Refine, Abort]`.
+Render the full draft spec to the user (text output or Artifact). Then emit AskUserQuestion with header `Spec`, options `[Approve, Approve & write plan, Refine, Abort]`.
 
 - `Approve` → Step 6.
 - `Approve & write plan` → Step 6, then chain into `/write-plan` (see Step 6).

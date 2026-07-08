@@ -148,7 +148,7 @@ Run the five Self-Review checks against the drafted plan **before** emitting it 
 
 ### Step 4 — Review
 
-Emit the full plan (header + tasks + closing sections, **including the completed Self-Review**) as a chat message. AskUserQuestion header `Plan`, options `[Save plan, Save plan & run subagent-dev, Refine, Abort]`.
+Render the full plan (header + tasks + closing sections, **including the completed Self-Review**) to the user (text output or Artifact). Then emit AskUserQuestion with header `Plan`, options `[Save plan, Save plan & run subagent-dev, Refine, Abort]`.
 
 - `Save plan` → Step 5.
 - `Save plan & run subagent-dev` → Step 5, then chain into `/subagent-dev` (see Step 5).
