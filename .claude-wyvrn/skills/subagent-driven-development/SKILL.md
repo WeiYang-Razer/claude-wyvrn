@@ -62,6 +62,13 @@ If `~/.claude-wyvrn/VERSION` missing → halt: `Wyvrn harness not installed. Run
 2. **Decompose.** Plan file → one brief per plan task. Free-form task → split into independently implementable units, ordered by dependency: infrastructure (types, interfaces) before logic before integration before consumers. Mark each task's dependencies. Tasks with no unmet dependency on a sibling are parallel-eligible; the rest are sequential.
 3. **Adopt the schedule.** If the plan file contains an `## Execution schedule` section, adopt it verbatim — its waves are authoritative for what may run concurrently. Do not re-derive or second-guess it; if it is visibly wrong (two same-wave tasks touch the same file, a task's `Depends on:` names a task in the same or a later wave), halt and surface the plan defect instead of silently re-serializing. A plan without a schedule, or a free-form task, uses the dependency marking above.
 
+## Execution mode: apply vs TDD
+
+Check the plan's executor directive before dispatching anything:
+
+- **Apply-mode** (the directive declares the plan code-complete — every `/write-plan` plan does): implementers transcribe the brief's code exactly, adapt only where the codebase differs from the brief's assumptions, build once, run the task's tests once. No red-phase, no live TDD, no re-derivation. State the mode explicitly in every dispatch prompt.
+- **TDD-mode** (free-form tasks, or briefs that specify behavior in prose without complete code): implementers follow `/test-driven-development` — failing test first, then implement.
+
 ## Workspace & scripts
 
 All handoffs go through files in `.claude-wyvrn-local/sdd/`, not inline text, so the orchestrator's context stays lean and a run can resume after compaction. Invoke the three scripts via `bash` (so they run under Git Bash on Windows and natively on Unix) from the installed skill dir:
@@ -90,7 +97,7 @@ Use the least powerful model that can handle each role, to conserve cost and inc
 
 **Always specify the model explicitly when dispatching.** An omitted model inherits your session's model — often the most capable and most expensive — which silently defeats this section.
 
-**Turn count beats token price.** Wall-clock and context cost scale with how many turns a subagent takes, and the cheapest models routinely take 2–3× the turns on multi-step work — costing more overall. Use a mid-tier model as the floor for reviewers and for implementers working from prose. When the plan text contains the complete code to write, the implementation is transcription plus testing: use the cheapest tier. Single-file mechanical fixes also take the cheapest tier.
+**Turn count beats token price.** Wall-clock and context cost scale with how many turns a subagent takes, and the cheapest models routinely take 2–3× the turns on multi-step work — costing more overall. Use a mid-tier model as the floor for reviewers and for implementers working from prose. **Apply-mode briefs are always the cheapest tier — no exceptions.** The implementation is transcription plus one build+test; the capable model already paid the design cost at plan time. That split is the point of code-complete plans. Single-file mechanical fixes also take the cheapest tier.
 
 **Task complexity signals (implementation):**
 - Touches 1–2 files with a complete spec → cheap model
@@ -104,7 +111,7 @@ Dispatch every implementer via `implementer-prompt.md`, passing the brief **path
 - **Sequential chain:** dispatch one subagent, verify + review (below), feed its interfaces forward into the next brief, dispatch the next. Use `subagent_type: general-purpose`.
 - **Parallel-eligible set (no schedule):** independent research-only units may fan out (use `Explore`); independent implementers must NOT share a working tree — either run them sequentially or isolate them in worktrees (wave mode).
 - **Wave dispatch (plan file with an Execution schedule):** process waves strictly in order.
-  1. For the current wave, dispatch every task in a single message — one `Agent` call per task with `isolation: worktree` and `subagent_type: general-purpose`. Generate each brief with `task-brief` in the main tree and pass its **absolute** path; the worktree agent reads it regardless of its cwd. Each brief carries the task's full plan steps *including its commit step*: the agent runs TDD and commits on its own worktree branch.
+  1. For the current wave, dispatch every task in a single message — one `Agent` call per task with `isolation: worktree` and `subagent_type: general-purpose`. Generate each brief with `task-brief` in the main tree and pass its **absolute** path; the worktree agent reads it regardless of its cwd. Each brief carries the task's full plan steps *including its commit step*: the agent executes in the plan's mode (apply-mode for code-complete plans) and commits on its own worktree branch.
   2. A single-task wave may skip the worktree and run in the main working tree — its commit lands directly on the plan branch.
   3. As each agent returns, verify + review it (below) against its worktree branch (read the branch diff, run the task's tests in that worktree).
   4. When every task in the wave is verified, merge the wave's task branches into the plan branch in task-number order. A merge conflict here means the plan's file-disjointness claim was wrong — halt and surface it as a plan defect; do not hand-resolve silently.
@@ -276,7 +283,7 @@ Final reviewer: All requirements met, ready to merge.
 - `gitflow.md` — branch, commit, and PR-into-`develop` protocol for finalizing.
 
 **Subagents should use:**
-- `/test-driven-development` — subagents follow TDD for each executable-code task.
+- `/test-driven-development` — TDD-mode briefs only (prose spec, no complete code). Apply-mode briefs skip the red-phase by design.
 
 **Alternative:**
 - `/flow` — inline, same-context execution when delegation isn't warranted (small or tightly-coupled work).

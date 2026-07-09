@@ -9,6 +9,8 @@ Drives a change through the red-green-refactor cycle: a failing test exists and 
 
 **Standalone by design.** Invoke directly for a single behavior, or as the implementation discipline inside a larger `/flow`. Never injected into `/flow` automatically.
 
+**Apply-mode exception.** Executing a code-complete plan (`/write-plan` output) is transcription, not TDD: the plan's test-first ordering already carried the design pressure, so the executor applies the plan's code and skips the live RED observation. This skill governs live red-green work, not plan transcription.
+
 ## Execution principles
 
 - One behavior per cycle. Do not write three tests then three implementations.

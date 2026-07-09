@@ -1,11 +1,13 @@
 ---
 name: write-plan
-description: Break a feature or task into a sequence of atomic tasks, each decomposed into numbered checkbox steps with step-level TDD (failing test → implement → passing test), exact file paths, complete change descriptions, explicit git add+commit commands, and per-task dependency metadata rolled up into a wave-based execution schedule so independent tasks can be dispatched to parallel agents. Produces a reviewable plan file in .claude-wyvrn-local/plans/. Trigger when the user says "write a plan for", "plan this out", "break this into tasks", or invokes /write-plan directly.
+description: Break a feature or task into a sequence of atomic tasks, each decomposed into numbered checkbox steps carrying complete code (tests authored first, then implementation) so executors run in apply-mode — transcribe, build once, test once, no red-phase — with exact file paths, explicit git add+commit commands, and per-task dependency metadata rolled up into a wave-based execution schedule so independent tasks can be dispatched to parallel agents. Produces a reviewable plan file in .claude-wyvrn-local/plans/. Trigger when the user says "write a plan for", "plan this out", "break this into tasks", or invokes /write-plan directly.
 ---
 
 # write-plan
 
-Decomposes a feature into a concrete, reviewable plan whose tasks an agentic worker can execute step-by-step. Each task is broken into atomic, checkboxed steps; each executable-code task follows red-green TDD; every task ends in a self-contained commit so the work is reversible at task granularity. The output is a plan file in `.claude-wyvrn-local/plans/` — the same directory `/flow` already retrieves for past-mistake context.
+Decomposes a feature into a concrete, reviewable plan whose tasks an agentic worker can execute step-by-step. Each task is broken into atomic, checkboxed steps; each executable-code task carries its complete code — tests authored first, then implementation — so the test-first design pressure is paid **once, at plan time**; every task ends in a self-contained commit so the work is reversible at task granularity. The output is a plan file in `.claude-wyvrn-local/plans/` — the same directory `/flow` already retrieves for past-mistake context.
+
+**Apply-mode execution.** Because the plan is code-complete, execution is transcription: the executor applies the plan's code, builds once per task, runs the task's tests once, and never re-derives the code through a live red-green cycle. This is what lets `/subagent-dev` dispatch implementers on its cheapest model tier — the capable model already did the thinking here.
 
 **Standalone by design.** This skill works on its own. If an approved spec exists in `.claude-wyvrn-local/specs/`, it is used as authoritative input. If no spec exists, the plan is drafted directly from the user's prompt + project context. `/brainstorm` is never required.
 
@@ -66,10 +68,10 @@ Compose, in order:
 - **Tech Stack** — language/standard, build system, test framework, and the exact build + single-test commands.
 - **Spec** — path to the spec file, or omit the line entirely if there is none.
 - **Executor directive** — a fixed blockquote line, placed as the plan's second line, copied verbatim (no per-plan variation):
-  `> **For agentic workers:** REQUIRED SUB-SKILL: Use `/subagent-dev` (subagent-driven-development, recommended) or `/flow` to implement this plan task-by-task. When an Execution schedule is present, `/subagent-dev` dispatches each wave's tasks to parallel worktree-isolated agents and gates each wave on a merged build+test. Steps use checkbox (`- [ ]`) syntax for tracking: the executor MUST edit this plan file and flip each completed step to `- [x]` — in `/subagent-dev` the orchestrator flips a task's boxes when its review passes; in `/flow` flip each step as it is done.`
+  `> **For agentic workers:** REQUIRED SUB-SKILL: Use `/subagent-dev` (subagent-driven-development, recommended) or `/flow` to implement this plan task-by-task. This plan is code-complete — execute each task in **apply-mode**: transcribe the plan's code exactly (adapt only where the codebase differs from the plan's assumptions, and record every deviation in the report), build once per task, run the task's tests once, expected PASS. Do NOT run tests to observe failure first — the plan's test-first ordering already carried the design pressure. When an Execution schedule is present, `/subagent-dev` dispatches each wave's tasks to parallel worktree-isolated agents and gates each wave on a merged build+test. Steps use checkbox (`- [ ]`) syntax for tracking: the executor MUST edit this plan file and flip each completed step to `- [x]` — in `/subagent-dev` the orchestrator flips a task's boxes when its review passes; in `/flow` flip each step as it is done.`
 - **File Structure table** — one row per file the plan touches: `File | Responsibility | Change`. This is the at-a-glance map.
 - **Execution schedule table** — derived from each task's `Depends on:` line plus its file set; the executor reads this directly instead of re-deriving the graph. One row per wave: `Wave | Tasks | May run concurrently because`. A task joins the earliest wave in which (a) every task it depends on sits in an earlier wave and (b) its file set is pairwise disjoint from every other task in that wave. Two logically independent tasks that touch the same file must NOT share a wave — either extract the shared-file edit into its own task or keep them in separate waves with a note naming the shared file. A schedule whose waves are all single-task is valid; it then simply documents the required order.
-- **Testing note** — state the test strategy and any precedent it follows. If part of the work cannot be unit-tested (no loopback harness, wire-format/IPC, visual rendering, etc.), say so here and say how those tasks are verified instead (build + runtime observation). This is where universal.md §1.6 ("docs/config without logic need no test") is reconciled with the codebase's real test surface — do not invent a test harness the project lacks.
+- **Testing note** — state the test strategy and any precedent it follows; say which tasks are test-covered (apply pattern) vs build/verify. If part of the work cannot be unit-tested (no loopback harness, wire-format/IPC, visual rendering, etc.), say so here and say how those tasks are verified instead (build + runtime observation). This is where universal.md §1.6 ("docs/config without logic need no test") is reconciled with the codebase's real test surface — do not invent a test harness the project lacks.
 
 #### 3b — Tasks and steps
 
@@ -80,15 +82,14 @@ Break the feature into atomic tasks (aim for 2–5; see ordering rules below). F
 - **Files:** every path the task touches, each tagged `Modify:` / `Create:` / `Test:`. No globs.
 - **Steps:** an ordered list of `- [ ]` checkbox steps, each a single ~2–5 minute action with a bolded label (`**Step 1: <action>**`). Give the exact code/edit inline — no placeholders, no "etc.". A step that changes a function gives the signature and the precise logic.
 
-**TDD step pattern — required for any task that changes executable code:**
+**Apply step pattern — required for any task that changes executable code:**
 
-1. `**Step 1: Write the failing test**` — the exact test code and where it goes (file + anchor), plus how it is registered/discovered.
-2. `**Step 2: Run the test to verify it fails**` — the exact run command and the expected failure (compile error or assertion), so the worker confirms red for the right reason.
-3. One or more implementation steps — the minimal change to make it pass.
-4. `**Step: Run the test to verify it passes**` — the run command and expected PASS.
-5. `**Step: Commit**` — see commit step below.
+1. `**Step 1: Write the tests**` — the exact test code and where it goes (file + anchor), plus how it is registered/discovered. Tests are authored first in the plan so test-first design pressure survives — but the executor applies them without running them yet (no red-phase).
+2. One or more implementation steps — the exact change.
+3. `**Step: Build and run the task's tests**` — the exact build command and single-test command, expected PASS. One build and one test run per task — never a build to observe an expected failure. A test failing after a faithful apply is a plan defect: the executor diagnoses, fixes minimally, and records the deviation in its report.
+4. `**Step: Commit**` — see commit step below.
 
-**Non-TDD tasks** (docs, config without logic, or code whose area genuinely has no test harness per the Testing note): replace steps 1–4 with the implementation steps followed by a **build/verify step** — the exact build command plus a concrete observable check (a grep that must match, a log line that must/must not appear, a runtime behavior to eyeball). Never a bare "it should work".
+**Non-test tasks** (docs, config without logic, or code whose area genuinely has no test harness per the Testing note): replace steps 1–3 with the implementation steps followed by a **build/verify step** — the exact build command plus a concrete observable check (a grep that must match, a log line that must/must not appear, a runtime behavior to eyeball). Never a bare "it should work".
 
 **Commit step — required as the last step of every task:**
 
@@ -162,7 +163,7 @@ File format (the outer fence is four backticks only so the inner ```bash``` / la
 ```` markdown
 # <Feature title> — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `/subagent-dev` (subagent-driven-development, recommended) or `/flow` to implement this plan task-by-task. When an Execution schedule is present, `/subagent-dev` dispatches each wave's tasks to parallel worktree-isolated agents and gates each wave on a merged build+test. Steps use checkbox (`- [ ]`) syntax for tracking: the executor MUST edit this plan file and flip each completed step to `- [x]` — in `/subagent-dev` the orchestrator flips a task's boxes when its review passes; in `/flow` flip each step as it is done.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `/subagent-dev` (subagent-driven-development, recommended) or `/flow` to implement this plan task-by-task. This plan is code-complete — execute each task in **apply-mode**: transcribe the plan's code exactly (adapt only where the codebase differs from the plan's assumptions, and record every deviation in the report), build once per task, run the task's tests once, expected PASS. Do NOT run tests to observe failure first — the plan's test-first ordering already carried the design pressure. When an Execution schedule is present, `/subagent-dev` dispatches each wave's tasks to parallel worktree-isolated agents and gates each wave on a merged build+test. Steps use checkbox (`- [ ]`) syntax for tracking: the executor MUST edit this plan file and flip each completed step to `- [x]` — in `/subagent-dev` the orchestrator flips a task's boxes when its review passes; in `/flow` flip each step as it is done.
 
 **Goal:** <one paragraph — the observable change once the plan lands>
 
@@ -187,7 +188,7 @@ File format (the outer fence is four backticks only so the inner ```bash``` / la
 | 1 | Task 1, Task 2 | <no shared files, no shared symbols> |
 | 2 | Task 3 | <needs `<symbol>` from Task 1> |
 
-**Testing note:** <test strategy + precedent; which tasks are TDD vs build/verify and why>
+**Testing note:** <test strategy + precedent; which tasks are test-covered (apply pattern) vs build/verify and why>
 
 ---
 
@@ -200,25 +201,20 @@ File format (the outer fence is four backticks only so the inner ```bash``` / la
 - Create: `path/...`
 - Test: `path/...`
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the tests**
 
   <exact test code + where it goes + how it's registered>
 
-- [ ] **Step 2: Run the test to verify it fails**
-
-  Run: `<single-test command>`
-  Expected: FAIL — <compile error or assertion that must fire>
-
-- [ ] **Step 3: <implementation step>**
+- [ ] **Step 2: <implementation step>**
 
   <exact change>
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 3: Build and run the task's tests**
 
-  Run: `<single-test command>`
+  Run: `<build command>` then `<single-test command>`
   Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
 git add path/... path/...
