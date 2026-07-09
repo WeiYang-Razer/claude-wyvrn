@@ -146,18 +146,16 @@ Worked example:
 
 Run the five Self-Review checks against the drafted plan **before** emitting it for review. If any check fails — an unmapped requirement, a placeholder, an inconsistent symbol, an unstated ordering dependency, a dependency cycle or a wave that violates the file-overlap rule — fix the plan first. Never emit a plan for approval with an unfilled or failing Self-Review.
 
-### Step 4 — Review
+### Step 4 — Write draft plan file and review
 
-Render the full plan (header + tasks + closing sections, **including the completed Self-Review**) to the user (text output or Artifact). Then emit AskUserQuestion with header `Plan`, options `[Save plan, Save plan & run subagent-dev, Refine, Abort]`.
+Write the full plan (header + tasks + closing sections, **including the completed Self-Review**) to `.claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md` where `<slug>` is a lowercase-hyphenated summary of the feature (≤5 words). Create `plans/` if missing (should already exist from any prior `/flow` run). Do NOT commit yet — the file exists so the user reviews it in their editor with full rendering instead of scrolling chat output.
+
+Emit the file path plus a one-line summary (`Tasks: N   Steps: M   Waves: K`). Do NOT paste the full plan into chat. Then emit AskUserQuestion with header `Plan`, question text naming the file path, options `[Save plan, Save plan & run subagent-dev, Refine, Abort]`.
 
 - `Save plan` → Step 5.
 - `Save plan & run subagent-dev` → Step 5, then chain into `/subagent-dev` (see Step 5).
-- `Refine` (or "Other" + text) → incorporate feedback, re-run the Step 3d gate, re-emit, repeat Step 4.
-- `Abort` → halt. Do not write any file.
-
-### Step 5 — Write plan file
-
-Write `.claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md` where `<slug>` is a lowercase-hyphenated summary of the feature (≤5 words). Create `plans/` if missing (should already exist from any prior `/flow` run).
+- `Refine` (or "Other" + text) → edit the plan file in place, re-run the Step 3d gate, emit a one-line note of what changed, repeat Step 4.
+- `Abort` → delete the draft plan file, halt.
 
 File format (the outer fence is four backticks only so the inner ```bash``` / language fences render literally — do not copy the four-backtick fence into the plan):
 
@@ -251,7 +249,9 @@ struct/API shapes, ordering semantics. When nothing applies:
 - **Dependency audit:** <graph acyclic + numbering topological; every consumed symbol → a declared dependency; same-wave tasks have disjoint file sets ✓>
 ````
 
-Then commit the plan file on the current branch:
+### Step 5 — Commit plan file
+
+On `Save plan` (or `Save plan & run subagent-dev`), commit the plan file on the current branch:
 
 ```bash
 git add .claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md
@@ -276,7 +276,7 @@ If the user chose `Save plan & run subagent-dev` at Step 4: after emitting, invo
 
 ## Stop conditions
 
-- User aborts at any step → halt, no file written.
+- User aborts at any step → halt; delete the draft plan file if one was written, leave nothing committed.
 - Feature is too vague to decompose → ask one round of clarifying questions in Step 2. If still vague after clarification, halt and tell the user the prompt is too ambiguous to plan against (do not produce a vague plan, but do not require any specific upstream skill either).
 
 ## Constraints

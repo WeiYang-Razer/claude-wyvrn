@@ -11,7 +11,7 @@ Collaborative design process that produces an approved spec before any code is w
 
 - Parallelize independent reads at Step 1.
 - Ask only what cannot be inferred. Batch clarifying questions.
-- No code, no file edits, no implementation suggestions until Step 6.
+- No code, no implementation suggestions before approval. The only file written before approval is the Step 4 draft spec.
 
 ## Preconditions
 
@@ -55,9 +55,21 @@ Emit 2–3 distinct implementation approaches. For each:
 
 Ask: "Which direction resonates, or should I explore a hybrid?" via AskUserQuestion header `Approach`, options `[Option A, Option B, Option C (if applicable), Hybrid / Other]`.
 
-### Step 4 — Draft spec
+### Step 4 — Write draft spec to disk
 
-Based on the chosen direction, draft a design document in working memory:
+Based on the chosen direction, write the draft design document to `.claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md` where `<slug>` is a lowercase-hyphenated summary of the topic (≤5 words). Create `specs/` directory if missing.
+
+Frontmatter at the top of the file:
+
+```
+---
+status: draft
+date: YYYY-MM-DD
+topic: <topic>
+---
+```
+
+Do NOT commit the draft. The file exists so the user reviews it in their editor with full rendering and diff tooling instead of scrolling chat output.
 
 Required sections:
 - **Problem** — what we're solving and why.
@@ -71,26 +83,16 @@ Required sections:
 
 ### Step 5 — Spec review
 
-Render the full draft spec to the user (text output or Artifact). Then emit AskUserQuestion with header `Spec`, options `[Approve, Approve & write plan, Refine, Abort]`.
+Emit the draft file path plus a short orientation summary (problem + chosen approach, ≤5 lines). Do NOT paste the full spec into chat — the user reviews the file itself. Then emit AskUserQuestion with header `Spec`, question text naming the file path, options `[Approve, Approve & write plan, Refine, Abort]`.
 
 - `Approve` → Step 6.
 - `Approve & write plan` → Step 6, then chain into `/write-plan` (see Step 6).
-- `Refine` (or "Other" + text) → incorporate feedback, re-emit, repeat Step 5.
-- `Abort` → halt. Do not write any file.
+- `Refine` (or "Other" + text) → edit the spec file in place, emit a one-line note of what changed, repeat Step 5.
+- `Abort` → delete the draft spec file, halt.
 
-### Step 6 — Write spec
+### Step 6 — Approve and commit spec
 
-Write `.claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md` where `<slug>` is a lowercase-hyphenated summary of the topic (≤5 words). Create `specs/` directory if missing.
-
-Append to the front of the file:
-
-```
----
-status: approved
-date: YYYY-MM-DD
-topic: <topic>
----
-```
+Edit the spec file frontmatter: `status: draft` → `status: approved`.
 
 Then commit the spec file on the current branch:
 
@@ -116,7 +118,7 @@ If the user chose `Approve & write plan` at Step 5: after emitting, invoke the `
 
 ## Stop conditions
 
-- User aborts at any step → halt, no file written.
+- User aborts at any step → halt; delete the draft spec file if one was written, leave nothing committed.
 - User interrupts → halt, summarize what was decided so far in chat.
 
 ## Constraints
