@@ -93,11 +93,13 @@ Use the least powerful model that can handle each role, to conserve cost and inc
 - **Mechanical implementation tasks** (isolated functions, clear specs, 1–2 files): fast, cheap model. Most tasks are mechanical when the plan is well-specified.
 - **Integration and judgment tasks** (multi-file coordination, pattern matching, debugging): standard model.
 - **Architecture and design tasks:** most capable model. The final whole-branch review is one of these — dispatch it on the most capable model, not the session default.
-- **Review tasks:** same judgment, scaled to the diff's size, complexity, and risk. A small mechanical diff does not need the most capable model; a subtle concurrency change does.
+- **Review tasks:** same judgment, scaled to the diff's size, complexity, and risk. A small mechanical diff does not need the most capable model; a subtle concurrency change does. **Apply-mode per-task reviews are always the cheapest tier** — the gate is a mechanical diff-vs-brief transcription check. The final whole-branch review stays most-capable regardless of mode.
+
+**Tier mapping (Agent tool `model` param):** cheapest = `haiku`, standard = `sonnet`, most capable = `opus` (or the session model when it is more capable).
 
 **Always specify the model explicitly when dispatching.** An omitted model inherits your session's model — often the most capable and most expensive — which silently defeats this section.
 
-**Turn count beats token price.** Wall-clock and context cost scale with how many turns a subagent takes, and the cheapest models routinely take 2–3× the turns on multi-step work — costing more overall. Use a mid-tier model as the floor for reviewers and for implementers working from prose. **Apply-mode briefs are always the cheapest tier — no exceptions.** The implementation is transcription plus one build+test; the capable model already paid the design cost at plan time. That split is the point of code-complete plans. Single-file mechanical fixes also take the cheapest tier.
+**Turn count beats token price.** Wall-clock and context cost scale with how many turns a subagent takes, and the cheapest models routinely take 2–3× the turns on multi-step work — costing more overall. Use a mid-tier model as the floor for reviewers of TDD-mode work and for implementers working from prose; apply-mode reviews are exempt (mechanical transcription check). **Apply-mode briefs are always the cheapest tier — no exceptions.** The implementation is transcription plus one build+test; the capable model already paid the design cost at plan time. That split is the point of code-complete plans. Single-file mechanical fixes also take the cheapest tier.
 
 **Task complexity signals (implementation):**
 - Touches 1–2 files with a complete spec → cheap model
