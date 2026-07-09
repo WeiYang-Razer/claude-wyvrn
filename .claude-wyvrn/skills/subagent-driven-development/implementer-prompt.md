@@ -43,21 +43,16 @@ Subagent (general-purpose):
 
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
-    2. Execute in the stated mode:
-       - **Apply-mode** (the brief contains complete code): transcribe the
-         brief's code exactly — tests and implementation — adapting only where
-         the actual codebase differs from the brief's assumptions; record every
-         deviation in your report. Do NOT run tests to observe failure first.
-         Build once, then run the task's tests once; expected PASS. A failure
-         after a faithful apply is a plan defect: diagnose, fix minimally,
-         record the deviation.
-       - **TDD-mode** (the brief specifies behavior in prose): follow
-         /test-driven-development — failing test first, then implement.
+    2. Follow TDD (/test-driven-development): write the failing test, run it to
+       confirm it fails for the right reason (RED), write the minimal code to
+       make it pass, run it to confirm it passes (GREEN). The brief carries the
+       complete code — transcribe it rather than re-derive, adapting only where
+       the actual codebase differs from the brief's assumptions and recording
+       every deviation in your report — but run the red-green cycle live.
     3. Verify implementation works
-    4. Commit your work [only if the brief's steps say to — in wave mode, commit
-       on your worktree branch exactly as the brief specifies]. Use a single
-       `-m` message. Do NOT append a `Co-Authored-By` trailer, a "Generated
-       with" footer, or any other trailer.
+    4. Commit your work [only if the brief's steps say to]. Use a single `-m`
+       message. Do NOT append a `Co-Authored-By` trailer, a "Generated with"
+       footer, or any other trailer.
     5. Self-review (see below)
     6. Report back
 
@@ -67,10 +62,8 @@ Subagent (general-purpose):
     questions**. It's always OK to pause and clarify. Don't guess or make
     assumptions.
 
-    TDD-mode: while iterating, run the focused test for what you're changing;
-    run the affected suite once before committing, not after every edit.
-    Apply-mode: one build + one test run at the end — iterate test runs only if
-    a test fails.
+    While iterating, run the focused test for what you're changing; run the
+    affected suite once before committing, not after every edit.
 
     ## Code Organization
 
@@ -125,8 +118,8 @@ Subagent (general-purpose):
 
     **Testing:**
     - Do tests actually verify behavior (not just mock behavior)?
-    - Did I follow the stated mode (apply: faithful transcription, deviations
-      recorded; TDD: red before green)?
+    - Did I follow TDD — red before green — and record any deviation from the
+      brief's code?
     - Are tests comprehensive?
     - Is the test output pristine (no stray warnings or noise)?
 
@@ -143,12 +136,11 @@ Subagent (general-purpose):
     Write your full report to [REPORT_FILE]:
     - What you implemented (or what you attempted, if blocked)
     - What you tested and test results
-    - **TDD Evidence** (TDD-mode only):
+    - **TDD Evidence:**
       - RED: command run, relevant failing output before implementation, and why
         the failure was expected
       - GREEN: command run and relevant passing output after implementation
-    - **Apply Evidence** (apply-mode only): build command + result, test command
-      + passing output, and every deviation from the brief's code with its reason
+      - Every deviation from the brief's code with its reason
     - Files changed
     - Self-review findings (if any)
     - Any issues or concerns
@@ -174,4 +166,4 @@ Subagent (general-purpose):
 - `[MODEL]` — REQUIRED: implementer model per SKILL.md "Model selection"
 - `[BRIEF_FILE]` — REQUIRED: the task brief file (`task-brief PLAN N` prints the path)
 - `[REPORT_FILE]` — REQUIRED: where the implementer writes its detailed report (`…/task-N-report.md`)
-- `[directory]` — the working tree (or, in wave mode, the task's worktree)
+- `[directory]` — the working tree
