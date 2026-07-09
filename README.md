@@ -1,4 +1,4 @@
-# Wyvrn Claude harness — v2.2.0
+# Wyvrn Claude harness — v2.4.0
 
 A lean, opinionated structure that lets Claude Code run development work autonomously, predictably, and **fast**.
 
@@ -32,7 +32,7 @@ If you're upgrading from v1.x:
 
 | Path | Purpose |
 |---|---|
-| `VERSION` | `2.2.0` |
+| `VERSION` | `2.4.0` |
 | `CLAUDE.md` | Template copied to project root by `claude-wyvrn setup`. |
 | `conventions/universal.md` | Universal code rules. |
 | `conventions/gitflow.md` | Branching and commit conventions. |
@@ -118,4 +118,4 @@ Machine-wide conventions go in `~/.claude-wyvrn/conventions/` and apply to every
 
 ## Version
 
-See `~/.claude-wyvrn/VERSION` for the installed harness version. Current: `2.2.0`.
+See `~/.claude-wyvrn/VERSION` for the installed harness version. Current: `2.4.0`.
