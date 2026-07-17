@@ -21,6 +21,8 @@ Decomposes a feature into a concrete, reviewable plan whose tasks an agentic wor
 - Every task ends in a commit. No "implement everything, then test, then one big commit".
 - Tasks run sequentially in dependency order — earlier tasks never depend on later ones.
 - Spec-optional: a matching spec sharpens scope, but its absence does not block planning.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages (this skill's Step 5 commit, and every commit step written into a plan) use POSIX constructs (heredoc, or multiple `-m` flags).
+- **ASCII-only output.** The plan file and every code block it carries must be strictly ASCII-only. Never use em-dashes, smart quotes, or any other non-ASCII character in source code, docs, or commit messages — executors transcribe the plan's code verbatim, so a non-ASCII character in the plan lands in the codebase.
 
 ## Preconditions
 
@@ -134,7 +136,7 @@ Worked example (condensed from a real cross-repo plan):
 **Self-Review notes.** Three checks (see the Step 3d gate — these are completed *before* review, not after):
 
 1. **Spec coverage** — every spec requirement (or, spec-less, every stated goal/AC) mapped to the task(s) that deliver it, each ticked ✓.
-2. **Placeholder scan** — confirm no `TBD`/`TODO`/"similar to"/"handle edge cases"/"etc." anywhere; every step carries the full exact change (enforces universal.md §1.2).
+2. **Placeholder scan** — confirm no `TBD`/`TODO`/"similar to"/"handle edge cases"/"etc." anywhere; every step carries the full exact change (enforces universal.md §1.2). Also confirm every code block and commit message in the plan is strictly ASCII-only (no em-dashes, smart quotes, or other non-ASCII characters).
 3. **Type/name consistency** — list every new symbol (function, type, enum value + its number, field, message name); confirm each is spelled identically in every task it appears in, and that every symbol a later task's `Consumes:` names is produced by an earlier task's `Produces:`.
 
 Worked example:
@@ -243,7 +245,7 @@ struct/API shapes, ordering semantics. When nothing applies:
 ## Self-Review notes
 
 - **Spec coverage:** <each spec requirement / goal → the task(s) that deliver it, ✓>
-- **Placeholder scan:** <confirm no TBD/TODO/"similar to"/"etc." — every step shows full code ✓>
+- **Placeholder scan:** <confirm no TBD/TODO/"similar to"/"etc." — every step shows full code; code blocks and commit messages are ASCII-only ✓>
 - **Type/name consistency:** <list each new symbol (incl. enum value + number); spelled identically everywhere; every Consumes matched by an earlier Produces ✓>
 ````
 

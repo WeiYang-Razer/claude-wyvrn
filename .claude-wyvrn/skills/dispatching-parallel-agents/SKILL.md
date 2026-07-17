@@ -15,6 +15,7 @@ Runs N independent work units concurrently by dispatching N subagents in one mes
 - **One message, many agents.** Concurrency comes from issuing all `Agent` calls in a single tool-use block. Separate messages run sequentially and defeat the purpose.
 - **Self-contained, slice-bounded briefs.** Each agent gets its own slice and is told to stay inside it.
 - **Reconcile and verify in the main thread.** One agent succeeding says nothing about the others; check each result independently.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags). This binds the main thread and every dispatched agent.
 
 ## Preconditions
 

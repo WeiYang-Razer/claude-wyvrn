@@ -260,6 +260,8 @@ Final reviewer: All requirements met, ready to merge.
 - Do not dispatch implementers in parallel — tasks run sequentially in one working tree.
 - Do not commit or push unless the user explicitly asks. Executing a plan file counts as asking for the plan's own per-task commit steps; pushing still requires an explicit ask.
 - Every commit — the orchestrator's and every subagent's — uses a single `-m` message per `gitflow.md` §3. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags). This binds the orchestrator and every dispatched subagent.
+- All generated files — the orchestrator's and every subagent's — must be strictly ASCII-only. Never use em-dashes, smart quotes, or any other non-ASCII character in source code, docs, or commit messages.
 - Do not modify `~/.claude-wyvrn/`.
 
 ## Integration

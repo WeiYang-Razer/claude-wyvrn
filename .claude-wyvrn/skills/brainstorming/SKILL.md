@@ -12,6 +12,7 @@ Collaborative design process that produces an approved spec before any code is w
 - Parallelize independent reads at Step 1.
 - Ask only what cannot be inferred. Batch clarifying questions.
 - No code, no implementation suggestions before approval. The only file written before approval is the Step 4 draft spec.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags).
 
 ## Preconditions
 
