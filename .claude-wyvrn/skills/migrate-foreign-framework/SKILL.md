@@ -22,6 +22,7 @@ After migration, installs the v2.0.0 CLAUDE.md template at the project root if n
 
 - Parallelize independent reads, moves, and writes.
 - All confirmations via `AskUserQuestion`.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags).
 
 ## Preconditions
 

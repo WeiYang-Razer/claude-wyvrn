@@ -16,6 +16,7 @@ Replaces shotgun edits with a disciplined hypothesis loop. The goal is the *root
 - Read before editing. Most root causes are found by reading the code path and its inputs, not by mutating it.
 - Fix the cause, not the symptom. Suppressing the error message or patching the output is not a fix.
 - Parallelize *reading* (multiple files, logs, greps in one batch); keep *experiments* sequential so each result is attributable.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags).
 
 ## Preconditions
 
@@ -98,4 +99,5 @@ Distinguish root cause from symptom explicitly: the line that throws is usually 
 - Never apply a fix you cannot trace to a root cause you can explain.
 - Never suppress, mask, or mark-as-expected a failure to make it disappear (`universal.md` §1.6, §2.4) without explicit user confirmation.
 - Remove all temporary debug instrumentation (logs, prints, breakpoints) before finishing.
+- All generated files must be strictly ASCII-only. Never use em-dashes, smart quotes, or any other non-ASCII character in source code, docs, or commit messages.
 - Do not modify `~/.claude-wyvrn/`.

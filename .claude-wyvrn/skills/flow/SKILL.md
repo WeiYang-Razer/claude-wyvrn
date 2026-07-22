@@ -12,6 +12,8 @@ Inline runbook for feature/fix/refactor. No custom subagents. MAY invoke built-i
 - **Parallelize independent operations.** Issue independent reads, edits, greps, and bash commands as a single tool-use message. Sequence only on data dependencies. See `universal.md` §1.7.
 - **Skip steps whose answers are inferable** from prompt, codebase, conventions, or past plans. Do not re-ask.
 - **No cycle caps** on confidence loops (Steps 3↔4, 7↔8). Iterate until 95%+ or the user interrupts.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags).
+- **ASCII-only output.** All generated files must be strictly ASCII-only. Never use em-dashes, smart quotes, or any other non-ASCII character in source code, docs, or commit messages.
 
 ## Preconditions
 

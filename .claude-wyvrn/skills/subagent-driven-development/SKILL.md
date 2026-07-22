@@ -177,7 +177,7 @@ Conversation memory does not survive compaction. Controllers that lost their pla
 
 1. Resolve any cross-task conflicts in the main thread.
 2. **Whole-branch review.** Run `review-package $(git merge-base develop HEAD) HEAD` and dispatch one broad task-reviewer subagent (most-capable model) over the full branch diff against the plan's goals and the logged Minor findings — the integration-level pass that per-task reviews cannot give. If it returns findings, dispatch ONE fix subagent with the complete list.
-3. Apply the `/verify-done` evidence gate before declaring complete. This is the one place the orchestrator exercises the integrated result end-to-end — run the full affected test set once here, in parallel where independent.
+3. Apply the `/verify-done` evidence gate before declaring complete. This is the one place the orchestrator exercises the integrated result end-to-end — run the full affected test set once here, in parallel where independent. If the plan file has a `## Final verification` section (full-suite run), execute it here and flip its checkbox; it runs once at this gate, never per task.
 4. Gitflow/commit/push are the orchestrator's job and stay gated — do not commit or push unless the user asked (mirrors `/flow` Step 10). On approval, finalize per `gitflow.md`: PR the feature branch into `develop`.
 
 ## Prompt templates
@@ -260,6 +260,8 @@ Final reviewer: All requirements met, ready to merge.
 - Do not dispatch implementers in parallel — tasks run sequentially in one working tree.
 - Do not commit or push unless the user explicitly asks. Executing a plan file counts as asking for the plan's own per-task commit steps; pushing still requires an explicit ask.
 - Every commit — the orchestrator's and every subagent's — uses a single `-m` message per `gitflow.md` §3. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags). This binds the orchestrator and every dispatched subagent.
+- All generated files — the orchestrator's and every subagent's — must be strictly ASCII-only. Never use em-dashes, smart quotes, or any other non-ASCII character in source code, docs, or commit messages.
 - Do not modify `~/.claude-wyvrn/`.
 
 ## Integration

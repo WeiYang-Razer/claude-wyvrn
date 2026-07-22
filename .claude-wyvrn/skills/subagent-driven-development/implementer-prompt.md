@@ -29,6 +29,10 @@ Subagent (general-purpose):
     convention. New code follows the convention even where the surrounding code
     deviates.
 
+    All files you generate must be strictly ASCII-only. Never use em-dashes,
+    smart quotes, or any other non-ASCII character in source code, docs, or
+    commit messages.
+
     ## Before You Begin
 
     If you have questions about:
@@ -52,7 +56,10 @@ Subagent (general-purpose):
     3. Verify implementation works
     4. Commit your work [only if the brief's steps say to]. Use a single `-m`
        message. Do NOT append a `Co-Authored-By` trailer, a "Generated with"
-       footer, or any other trailer.
+       footer, or any other trailer. In the Bash tool, never use PowerShell
+       here-string syntax (`@'...'@`, `@"..."@`) — it leaks stray `@`
+       characters; multi-line strings use POSIX constructs (heredoc, or
+       multiple `-m` flags).
     5. Self-review (see below)
     6. Report back
 
