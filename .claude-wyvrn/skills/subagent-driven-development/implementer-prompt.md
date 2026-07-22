@@ -29,9 +29,9 @@ Subagent (general-purpose):
     convention. New code follows the convention even where the surrounding code
     deviates.
 
-    All files you generate must be strictly ASCII-only. Never use em-dashes,
-    smart quotes, or any other non-ASCII character in source code, docs, or
-    commit messages.
+    Source code you write, code blocks inside any markdown you generate, and
+    every commit message must be strictly 7-bit ASCII - no em-dashes, smart
+    quotes, or other non-ASCII characters. Markdown prose may use them.
 
     ## Before You Begin
 

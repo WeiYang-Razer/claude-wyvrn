@@ -71,9 +71,21 @@ Implementers follow `/test-driven-development`: write the failing test, run it r
 All handoffs go through files in `.claude-wyvrn-local/sdd/`, not inline text, so the orchestrator's context stays lean and a run can resume after compaction. Invoke the four scripts via `bash` (so they run under Git Bash on Windows and natively on Unix) from the installed skill dir — the scripts are committed non-executable and call each other the same way:
 
 - `bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/sdd-workspace` — prints the workspace path, creating it with a self-ignoring `.gitignore` if needed.
-- `bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/task-brief PLAN_FILE N` — writes `task-N-brief.md`, the extracted task text, and prints the path.
+- `bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/task-brief PLAN_FILE N` — writes `task-N-brief.md` and prints the path. The brief carries the task's own text plus the plan-header context that binds it from outside its heading: the `**Tech Stack:**` line (the exact build/test commands the red-green steps need) and the `## Global Constraints` section. Do not re-paste either into the dispatch prompt; the brief already has them.
 - `bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/review-package BASE HEAD` — writes `review-<base7>..<head7>.diff` and prints the path.
 - `bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/branch-base [INTEGRATION_BRANCH]` — prints the commit the current branch was cut from. Resolves the integration branch in order `develop`, `main`, `master`, then the remote default; pass one explicitly to override. Never hardcode `develop` — a repo without it fails `git merge-base` at the final review.
+
+**Script preflight (run once, before Task 1).** An install that copied only `SKILL.md` leaves these scripts missing, and the failure would otherwise surface mid-dispatch after work has already started. Check first:
+
+```bash
+sdd=~/.claude-wyvrn/skills/subagent-driven-development
+for f in scripts/sdd-workspace scripts/task-brief scripts/review-package scripts/branch-base \
+         implementer-prompt.md task-reviewer-prompt.md; do
+  [ -f "$sdd/$f" ] || echo "MISSING: $sdd/$f"
+done
+```
+
+If anything prints, halt: `subagent-dev assets missing from the installed skill. Re-run claude-wyvrn install.` Do not fall back to inline briefs — inline handoff is the cost problem this skill exists to avoid.
 
 ## Pre-flight plan review
 
@@ -262,7 +274,7 @@ Final reviewer: All requirements met, ready to merge.
 - Do not commit or push unless the user explicitly asks. Executing a plan file counts as asking for the plan's own per-task commit steps; pushing still requires an explicit ask.
 - Every commit — the orchestrator's and every subagent's — uses a single `-m` message per `gitflow.md` §3. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
 - **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags). This binds the orchestrator and every dispatched subagent.
-- All generated files — the orchestrator's and every subagent's — must be strictly ASCII-only. Never use em-dashes, smart quotes, or any other non-ASCII character in source code, docs, or commit messages.
+- Source code — the orchestrator's and every subagent's — plus code blocks inside generated markdown and every commit message must be strictly 7-bit ASCII: no em-dashes, smart quotes, or other non-ASCII characters. Markdown prose may use them.
 - Do not modify `~/.claude-wyvrn/`.
 
 ## Integration

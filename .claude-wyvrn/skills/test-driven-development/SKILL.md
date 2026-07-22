@@ -83,5 +83,5 @@ Refactoring is optional per cycle — skip if the green code is already clean.
 - Never write implementation code before a failing test for that behavior exists and has been seen failing.
 - Never weaken, skip, or delete a test to force green (`universal.md` §1.6). No `xit`, `@skip`, `[Ignore]`, commented-out asserts.
 - Do not implement behaviors beyond the current test (`universal.md` §1.2 — no speculative code).
-- All generated files must be strictly ASCII-only. Never use em-dashes, smart quotes, or any other non-ASCII character in source code, docs, or commit messages.
+- Source code you write, code blocks inside generated markdown, and every commit message must be strictly 7-bit ASCII — no em-dashes, smart quotes, or other non-ASCII characters. Markdown prose may use them.
 - Do not modify `~/.claude-wyvrn/`.

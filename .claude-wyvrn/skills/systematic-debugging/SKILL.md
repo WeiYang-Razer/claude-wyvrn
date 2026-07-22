@@ -99,5 +99,5 @@ Distinguish root cause from symptom explicitly: the line that throws is usually 
 - Never apply a fix you cannot trace to a root cause you can explain.
 - Never suppress, mask, or mark-as-expected a failure to make it disappear (`universal.md` §1.6, §2.4) without explicit user confirmation.
 - Remove all temporary debug instrumentation (logs, prints, breakpoints) before finishing.
-- All generated files must be strictly ASCII-only. Never use em-dashes, smart quotes, or any other non-ASCII character in source code, docs, or commit messages.
+- Source code you write, code blocks inside generated markdown, and every commit message must be strictly 7-bit ASCII — no em-dashes, smart quotes, or other non-ASCII characters. Markdown prose may use them.
 - Do not modify `~/.claude-wyvrn/`.
