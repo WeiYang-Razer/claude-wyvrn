@@ -23,7 +23,7 @@ Decomposes a feature into a concrete, reviewable plan whose tasks an agentic wor
 - Tasks run sequentially in dependency order — earlier tasks never depend on later ones.
 - Spec-optional: a matching spec sharpens scope, but its absence does not block planning.
 - **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages (this skill's Step 5 commit, and every commit step written into a plan) use POSIX constructs (heredoc, or multiple `-m` flags).
-- **ASCII-only output.** The plan file and every code block it carries must be strictly ASCII-only. Never use em-dashes, smart quotes, or any other non-ASCII character in source code, docs, or commit messages — executors transcribe the plan's code verbatim, so a non-ASCII character in the plan lands in the codebase.
+- **ASCII-only code and commit messages.** Every code block the plan carries, and every commit message it spells out, must be strictly 7-bit ASCII — no em-dashes, smart quotes, or other non-ASCII characters. Executors transcribe the plan's code verbatim, so a non-ASCII character inside a code block lands in the codebase. The rule is scoped to code blocks and commit messages; the plan's prose may use them.
 
 ## Preconditions
 
@@ -139,7 +139,7 @@ Worked example (condensed from a real cross-repo plan):
 **Self-Review notes.** Three checks (see the Step 3d gate — these are completed *before* review, not after):
 
 1. **Spec coverage** — every spec requirement (or, spec-less, every stated goal/AC) mapped to the task(s) that deliver it, each ticked ✓.
-2. **Placeholder scan** — confirm no `TBD`/`TODO`/"similar to"/"handle edge cases"/"etc." anywhere; every step carries the full exact change (enforces universal.md §1.2). Also confirm every code block and commit message in the plan is strictly ASCII-only (no em-dashes, smart quotes, or other non-ASCII characters).
+2. **Placeholder scan** — confirm no `TBD`/`TODO`/"similar to"/"handle edge cases"/"etc." anywhere; every step carries the full exact change (enforces universal.md §1.2). Also confirm every code block and commit message in the plan is strictly 7-bit ASCII (no em-dashes, smart quotes, or other non-ASCII characters). Prose is exempt — scan the fenced blocks and the `git commit -m` subjects only.
 3. **Type/name consistency** — list every new symbol (function, type, enum value + its number, field, message name); confirm each is spelled identically in every task it appears in, and that every symbol a later task's `Consumes:` names is produced by an earlier task's `Produces:`.
 
 Worked example:
@@ -174,7 +174,7 @@ File format (the outer fence is four backticks only so the inner ```bash``` / la
 
 **Architecture:** <2–4 sentences — approach and key design decisions>
 
-**Tech Stack:** <language/standard, build system, test framework; build + single-test commands>
+**Tech Stack:** <language/standard, build system, test framework; build, single-test, and full-suite commands>
 
 **Spec:** <path to spec file>   ← omit this line entirely if there is no spec
 

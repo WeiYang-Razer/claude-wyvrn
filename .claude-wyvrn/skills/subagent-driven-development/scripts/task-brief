@@ -3,6 +3,12 @@
 # into a file the implementer subagent reads in one call, so the task text never
 # has to be pasted through the orchestrator's context.
 #
+# The brief also carries the plan-header context that binds every task but lives
+# outside the task's own heading: the Tech Stack line (the exact build and test
+# commands the red-green steps need) and the Global Constraints section. Without
+# them an implementer can satisfy its task and still violate a constraint the
+# task reviewer is handed and will reject it for.
+#
 # Usage: task-brief PLAN_FILE TASK_NUMBER [OUTFILE]
 # Default OUTFILE: <repo-root>/.claude-wyvrn-local/sdd/task-<N>-brief.md
 set -euo pipefail
@@ -27,7 +33,7 @@ fi
 # task, or a trailing plan section such as "## Final verification". Stopping
 # only at the next Task heading would append every trailing section to the last
 # task's brief, handing its implementer the plan-level full-suite step.
-awk -v n="$n" '
+task=$(awk -v n="$n" '
   /^```/ { infence = !infence }
   !infence && /^#+[ \t]/ {
     match($0, /^#+/)
@@ -40,11 +46,59 @@ awk -v n="$n" '
     }
   }
   intask { print }
-' "$plan" > "$out"
+' "$plan")
 
-if [ ! -s "$out" ]; then
+if [ -z "$task" ]; then
   echo "task ${n} not found in ${plan} (no heading matching 'Task ${n}')" >&2
   exit 3
 fi
+
+# Bolded header field, e.g. "**Tech Stack:** C++20, CMake, ...". First match wins.
+techstack=$(awk '/^\*\*Tech Stack:\*\*/ { print; exit }' "$plan")
+
+# The "## Global Constraints" section verbatim, heading included, ending at the
+# next heading of the same or shallower level. Same fence guard as above.
+constraints=$(awk '
+  /^```/ { infence = !infence }
+  !infence && /^#+[ \t]/ {
+    match($0, /^#+/)
+    lvl = RLENGTH
+    if (tolower($0) ~ /^#+[ \t]+global constraints[ \t]*$/) {
+      insec = 1
+      seclvl = lvl
+    } else if (insec && lvl <= seclvl) {
+      insec = 0
+    }
+  }
+  insec { print }
+' "$plan")
+
+{
+  echo "# Task ${n} brief"
+  echo
+  echo "Extracted from: ${plan}"
+  echo
+  echo "## Plan context"
+  echo
+  echo "These plan-header items bind this task even though they sit outside its heading."
+  echo
+  if [ -n "$techstack" ]; then
+    printf '%s\n' "$techstack"
+  else
+    echo "**Tech Stack:** not declared in the plan header."
+  fi
+  echo
+  if [ -n "$constraints" ]; then
+    printf '%s\n' "$constraints"
+  else
+    echo "## Global Constraints"
+    echo
+    echo "None declared in the plan header."
+  fi
+  echo
+  echo "---"
+  echo
+  printf '%s\n' "$task"
+} > "$out"
 
 echo "wrote ${out}: $(wc -l < "$out" | tr -d ' ') lines"
