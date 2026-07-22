@@ -68,11 +68,12 @@ Implementers follow `/test-driven-development`: write the failing test, run it r
 
 ## Workspace & scripts
 
-All handoffs go through files in `.claude-wyvrn-local/sdd/`, not inline text, so the orchestrator's context stays lean and a run can resume after compaction. Invoke the three scripts via `bash` (so they run under Git Bash on Windows and natively on Unix) from the installed skill dir:
+All handoffs go through files in `.claude-wyvrn-local/sdd/`, not inline text, so the orchestrator's context stays lean and a run can resume after compaction. Invoke the four scripts via `bash` (so they run under Git Bash on Windows and natively on Unix) from the installed skill dir — the scripts are committed non-executable and call each other the same way:
 
 - `bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/sdd-workspace` — prints the workspace path, creating it with a self-ignoring `.gitignore` if needed.
 - `bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/task-brief PLAN_FILE N` — writes `task-N-brief.md`, the extracted task text, and prints the path.
 - `bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/review-package BASE HEAD` — writes `review-<base7>..<head7>.diff` and prints the path.
+- `bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/branch-base [INTEGRATION_BRANCH]` — prints the commit the current branch was cut from. Resolves the integration branch in order `develop`, `main`, `master`, then the remote default; pass one explicitly to override. Never hardcode `develop` — a repo without it fails `git merge-base` at the final review.
 
 ## Pre-flight plan review
 
@@ -151,7 +152,7 @@ Per-task reviews are task-scoped gates. The broad review happens once, at the fi
 - A dispatch prompt describes one task, not the session's history. Do not paste accumulated prior-task summaries ("state after Tasks 1–3") into later dispatches. A fresh subagent needs its task, the interfaces it touches, and the binding constraints. Nothing else.
 - Dispatch fix subagents for Critical and Important findings. Record Minor findings in the progress ledger as you go, and point the final whole-branch review at that list so it can triage which must be fixed before merge. A roll-up nobody reads is a silent discard.
 - A finding labeled plan-mandated — or any finding that conflicts with what the plan's text requires — is the user's decision, like any plan contradiction: present the finding and the plan text, ask which governs. Do not dismiss the finding because the plan mandates it, and do not dispatch a fix that contradicts the plan without asking.
-- The final whole-branch review gets a package too: run `review-package MERGE_BASE HEAD` (MERGE_BASE = the commit the branch started from, e.g. `git merge-base develop HEAD`) and include the printed path in the final review dispatch.
+- The final whole-branch review gets a package too: run `review-package "$(bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/branch-base)" HEAD` and include the printed path in the final review dispatch.
 - Every fix dispatch carries the implementer contract: the fix subagent re-runs the tests covering its change and reports the results. Name the covering test files — a one-line fix does not need the whole suite. Before re-dispatching the reviewer, confirm the fix report contains the covering tests, the command run, and the output.
 - If the final whole-branch review returns findings, dispatch ONE fix subagent with the complete findings list — not one fixer per finding. Per-finding fixers each rebuild context and re-run suites; the cost adds up fast.
 
@@ -176,9 +177,9 @@ Conversation memory does not survive compaction. Controllers that lost their pla
 ## Integrate + finalize
 
 1. Resolve any cross-task conflicts in the main thread.
-2. **Whole-branch review.** Run `review-package $(git merge-base develop HEAD) HEAD` and dispatch one broad task-reviewer subagent (most-capable model) over the full branch diff against the plan's goals and the logged Minor findings — the integration-level pass that per-task reviews cannot give. If it returns findings, dispatch ONE fix subagent with the complete list.
+2. **Whole-branch review.** Run `review-package "$(bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/branch-base)" HEAD` and dispatch one broad task-reviewer subagent (most-capable model) over the full branch diff against the plan's goals and the logged Minor findings — the integration-level pass that per-task reviews cannot give. If it returns findings, dispatch ONE fix subagent with the complete list.
 3. Apply the `/verify-done` evidence gate before declaring complete. This is the one place the orchestrator exercises the integrated result end-to-end — run the full affected test set once here, in parallel where independent. If the plan file has a `## Final verification` section (full-suite run), execute it here and flip its checkbox; it runs once at this gate, never per task.
-4. Gitflow/commit/push are the orchestrator's job and stay gated — do not commit or push unless the user asked (mirrors `/flow` Step 10). On approval, finalize per `gitflow.md`: PR the feature branch into `develop`.
+4. Gitflow/commit/push are the orchestrator's job and stay gated — do not commit or push unless the user asked (mirrors `/flow` Step 10). On approval, finalize per `gitflow.md`: PR the feature branch into the integration branch (`develop` per `gitflow.md`, or whatever `branch-base` resolved for a repo without one).
 
 ## Prompt templates
 
