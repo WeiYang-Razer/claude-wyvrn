@@ -263,6 +263,8 @@ struct/API shapes, ordering semantics. When nothing applies:
 
 ### Step 5 — Commit plan file
 
+**Branch guard (before staging anything).** Run `git branch --show-current`. If it prints `develop`, `master`, or `main` — or nothing, meaning detached HEAD — do NOT commit. `gitflow.md` §1 prohibits direct commits to the integration and release branches, and the same gate binds `/wyvrn-commit`. Emit the plan path, state which protected branch HEAD is on, and AskUserQuestion header `Commit`, options `[Leave plan uncommitted, Commit here anyway]`. `Leave plan uncommitted` → skip the commit, keep the plan file on disk, and say so in the Step 5 emission; the hand-off to `/subagent-dev` still proceeds if it was chosen. `Commit here anyway` → proceed. Otherwise commit without asking.
+
 On `Save plan` (or `Save plan & run subagent-dev`), commit the plan file on the current branch:
 
 ```bash
@@ -273,7 +275,7 @@ git commit -m "docs(plans): add <slug> implementation plan"
 - `git add` lists only the plan file — never `git add -A`.
 - The message follows `gitflow.md` §3.
 - A single `-m` line only. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
-- Commit on the current branch. Do not create branches, push, or open PRs.
+- Commit on the current branch. Do not create branches, switch branches, push, or open PRs.
 
 Emit:
 
@@ -283,6 +285,8 @@ Plan written and committed: .claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md
 Tasks: N   Steps: M
 Next: /subagent-dev <plan-file> to execute with subagents (sequential, review between tasks), or /flow referencing each task.
 ```
+
+If the branch guard skipped the commit, replace the first line with `Plan written (uncommitted, HEAD on <branch>): <path>`.
 
 If the user chose `Save plan & run subagent-dev` at Step 4: after emitting, invoke the `subagent-driven-development` skill (`/subagent-dev`) with the written plan file path. This skill's no-implementation constraints end at that hand-off; `/subagent-dev` runs under its own rules and does implement.
 

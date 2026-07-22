@@ -95,6 +95,8 @@ Emit the draft file path plus a short orientation summary (problem + chosen appr
 
 Edit the spec file frontmatter: `status: draft` → `status: approved`.
 
+**Branch guard (before staging anything).** Run `git branch --show-current`. If it prints `develop`, `master`, or `main` — or nothing, meaning detached HEAD — do NOT commit. `gitflow.md` §1 prohibits direct commits to the integration and release branches, and the same gate binds `/wyvrn-commit`. Emit the spec path, state which protected branch HEAD is on, and AskUserQuestion header `Commit`, options `[Leave spec uncommitted, Commit here anyway]`. `Leave spec uncommitted` → skip the commit, keep the approved file on disk, and say so in the Step 6 emission. `Commit here anyway` → proceed. Otherwise commit without asking.
+
 Then commit the spec file on the current branch:
 
 ```bash
@@ -105,7 +107,7 @@ git commit -m "docs(specs): add <slug> design spec"
 - `git add` lists only the spec file — never `git add -A`.
 - The message follows `gitflow.md` §3.
 - A single `-m` line only. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
-- Commit on the current branch. Do not create branches, push, or open PRs.
+- Commit on the current branch. Do not create branches, switch branches, push, or open PRs.
 
 Emit:
 
@@ -114,6 +116,8 @@ Spec written and committed: .claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.m
 
 Next: run /flow or /write-plan referencing this spec.
 ```
+
+If the branch guard skipped the commit, replace the first line with `Spec written (uncommitted, HEAD on <branch>): <path>`.
 
 If the user chose `Approve & write plan` at Step 5: after emitting, invoke the `writing-plans` skill (`/write-plan`) with the written spec path as the feature input. This skill's constraints end at that hand-off; `/write-plan` runs under its own rules.
 

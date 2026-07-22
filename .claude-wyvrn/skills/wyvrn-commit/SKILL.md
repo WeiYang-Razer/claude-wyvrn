@@ -20,8 +20,10 @@ the no-trailer rule, and the shell mechanics.
 ## Preconditions
 
 - Inside a git repository with at least one change to commit.
-- On a branch that is not `develop` or `master` (`gitflow.md` section 1). If HEAD is on
-  either, stop and ask before committing.
+- On a branch that is not `develop`, `master`, or `main` (`gitflow.md` section 1). Check
+  with `git branch --show-current`; empty output means detached HEAD. If HEAD is on a
+  protected branch or detached, stop and ask before committing. `/brainstorm` Step 6 and
+  `/write-plan` Step 5 apply the same guard to their own artifact commits.
 - Committing is user-initiated. Do not commit as a side effect of other work.
 
 ## Rules
