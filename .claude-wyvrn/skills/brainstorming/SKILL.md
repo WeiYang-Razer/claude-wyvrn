@@ -11,7 +11,8 @@ Collaborative design process that produces an approved spec before any code is w
 
 - Parallelize independent reads at Step 1.
 - Ask only what cannot be inferred. Batch clarifying questions.
-- No code, no file edits, no implementation suggestions until Step 6.
+- No code, no implementation suggestions before approval. The only file written before approval is the Step 4 draft spec.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags).
 
 ## Preconditions
 
@@ -55,9 +56,21 @@ Emit 2–3 distinct implementation approaches. For each:
 
 Ask: "Which direction resonates, or should I explore a hybrid?" via AskUserQuestion header `Approach`, options `[Option A, Option B, Option C (if applicable), Hybrid / Other]`.
 
-### Step 4 — Draft spec
+### Step 4 — Write draft spec to disk
 
-Based on the chosen direction, draft a design document in working memory:
+Based on the chosen direction, write the draft design document to `.claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md` where `<slug>` is a lowercase-hyphenated summary of the topic (≤5 words). Create `specs/` directory if missing.
+
+Frontmatter at the top of the file:
+
+```
+---
+status: draft
+date: YYYY-MM-DD
+topic: <topic>
+---
+```
+
+Do NOT commit the draft. The file exists so the user reviews it in their editor with full rendering and diff tooling instead of scrolling chat output.
 
 Required sections:
 - **Problem** — what we're solving and why.
@@ -71,42 +84,52 @@ Required sections:
 
 ### Step 5 — Spec review
 
-Emit the full draft spec as a chat message. AskUserQuestion header `Spec`, options `[Approve, Refine, Abort]`.
+Emit the draft file path plus a short orientation summary (problem + chosen approach, ≤5 lines). Do NOT paste the full spec into chat — the user reviews the file itself. Then emit AskUserQuestion with header `Spec`, question text naming the file path, options `[Approve, Approve & write plan, Refine, Abort]`.
 
 - `Approve` → Step 6.
-- `Refine` (or "Other" + text) → incorporate feedback, re-emit, repeat Step 5.
-- `Abort` → halt. Do not write any file.
+- `Approve & write plan` → Step 6, then chain into `/write-plan` (see Step 6).
+- `Refine` (or "Other" + text) → edit the spec file in place, emit a one-line note of what changed, repeat Step 5.
+- `Abort` → delete the draft spec file, halt.
 
-### Step 6 — Write spec
+### Step 6 — Approve and commit spec
 
-Write `.claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md` where `<slug>` is a lowercase-hyphenated summary of the topic (≤5 words). Create `specs/` directory if missing.
+Edit the spec file frontmatter: `status: draft` → `status: approved`.
 
-Append to the front of the file:
+**Branch guard (before staging anything).** Run `git branch --show-current`. If it prints `develop`, `master`, or `main` — or nothing, meaning detached HEAD — do NOT commit. `gitflow.md` §1 prohibits direct commits to the integration and release branches, and the same gate binds `/wyvrn-commit`. Emit the spec path, state which protected branch HEAD is on, and AskUserQuestion header `Commit`, options `[Leave spec uncommitted, Commit here anyway]`. `Leave spec uncommitted` → skip the commit, keep the approved file on disk, and say so in the Step 6 emission. `Commit here anyway` → proceed. Otherwise commit without asking.
 
+Then commit the spec file on the current branch:
+
+```bash
+git add .claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md
+git commit -m "docs(specs): add <slug> design spec"
 ```
----
-status: approved
-date: YYYY-MM-DD
-topic: <topic>
----
-```
+
+- `git add` lists only the spec file — never `git add -A`.
+- The message follows `gitflow.md` §3.
+- A single `-m` line only. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
+- Commit on the current branch. Do not create branches, switch branches, push, or open PRs.
 
 Emit:
 
 ```
-Spec written: .claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md
+Spec written and committed: .claude-wyvrn-local/specs/YYYY-MM-DD-<slug>-design.md
 
 Next: run /flow or /write-plan referencing this spec.
 ```
 
+If the branch guard skipped the commit, replace the first line with `Spec written (uncommitted, HEAD on <branch>): <path>`.
+
+If the user chose `Approve & write plan` at Step 5: after emitting, invoke the `writing-plans` skill (`/write-plan`) with the written spec path as the feature input. This skill's constraints end at that hand-off; `/write-plan` runs under its own rules.
+
 ## Stop conditions
 
-- User aborts at any step → halt, no file written.
+- User aborts at any step → halt; delete the draft spec file if one was written, leave nothing committed.
 - User interrupts → halt, summarize what was decided so far in chat.
 
 ## Constraints
 
 - Do NOT produce implementation code at any step.
 - Do NOT modify source files, configs, or anything outside `.claude-wyvrn-local/specs/`.
+- The only permitted git operations are the Step 6 `git add` + `git commit` of the spec file.
 - Do NOT modify `~/.claude-wyvrn/`.
 - All confirmations via `AskUserQuestion`.

@@ -1,4 +1,4 @@
-# Wyvrn Claude harness — v2.2.0
+# Wyvrn Claude harness — v2.4.0
 
 A lean, opinionated structure that lets Claude Code run development work autonomously, predictably, and **fast**.
 
@@ -32,15 +32,26 @@ If you're upgrading from v1.x:
 
 | Path | Purpose |
 |---|---|
-| `VERSION` | `2.2.0` |
+| `VERSION` | `2.4.0` |
 | `CLAUDE.md` | Template copied to project root by `claude-wyvrn setup`. |
 | `conventions/universal.md` | Universal code rules. |
 | `conventions/gitflow.md` | Branching and commit conventions. |
 | `conventions/<stack>.md` | Stack-specific rules (javascript, typescript, python, csharp, cpp, react). |
 | `templates/conventions.md` | Only template kept; used by `/wyvrn-refresh-context` when creating a new project stack-conventions file. |
-| `skills/flow/SKILL.md` | The single runbook. |
+| `skills/flow/SKILL.md` | `/flow` — inline runbook. One of the two execution modes. |
+| `skills/subagent-driven-development/` | `/subagent-dev` — the other execution mode: a fresh implementer subagent per task, a reviewer subagent gating each one. Ships `implementer-prompt.md`, `task-reviewer-prompt.md`, and `scripts/` (`sdd-workspace`, `task-brief`, `review-package`, `branch-base`). |
+| `skills/brainstorming/SKILL.md` | `/brainstorm` — design gate; writes an approved spec. |
+| `skills/writing-plans/SKILL.md` | `/write-plan` — decomposes a feature into TDD tasks. |
+| `skills/test-driven-development/SKILL.md` | `/tdd` — red-green-refactor discipline. |
+| `skills/systematic-debugging/SKILL.md` | `/debug` — hypothesis-driven root-cause loop. |
+| `skills/verification-before-completion/SKILL.md` | `/verify-done` — evidence gate before claiming done. |
+| `skills/dispatching-parallel-agents/SKILL.md` | `/parallel-agents` — fan out independent work. |
+| `skills/using-git-worktrees/SKILL.md` | `/worktree` — isolated checkout for a task. |
+| `skills/wyvrn-commit/SKILL.md` | `/wyvrn-commit` — stage and commit per `gitflow.md` section 3. |
 | `skills/wyvrn-refresh-context/SKILL.md` | Populate/sync project-context files. |
 | `skills/migrate-foreign-framework/SKILL.md` | Migrate non-Wyvrn projects in. |
+
+`/subagent-dev` reads its prompt templates and `scripts/` from the installed skill directory, so `claude-wyvrn install` must copy each skill folder whole — not just its `SKILL.md`. The skill preflights for them and halts if any are missing.
 
 ### Per project — `.claude-wyvrn-local/`
 
@@ -49,9 +60,11 @@ If you're upgrading from v1.x:
 | `PROJECT.md` | Project context, gotchas, idioms. Populated/synced by `/wyvrn-refresh-context`. |
 | `ARCHITECTURE.md` | Module map, invariants. Populated/synced by `/wyvrn-refresh-context`. |
 | `conventions/<stack>.md` | Project-specific stack conventions (overrides global on conflict). Optional. |
-| `plans/` | Learning logs from each `/flow` run. Created on first run. Not auto-loaded into sessions. |
+| `specs/` | Approved design specs from `/brainstorm` (`YYYY-MM-DD-<slug>-design.md`). Committed on approval. |
+| `plans/` | Two kinds, distinguished by suffix: `/flow` learning logs (`YYYY-MM-DD-<slug>.md`) and `/write-plan` implementation plans (`YYYY-MM-DD-<slug>-plan.md`). Not auto-loaded into sessions. |
+| `sdd/` | `/subagent-dev` scratch: task briefs, implementer reports, review packages, progress ledger. Self-ignoring; never committed. |
 
-Track `.claude-wyvrn-local/` in git.
+Track `.claude-wyvrn-local/` in git — `sdd/` excepted, which ignores itself.
 
 ## Install and setup
 
@@ -118,4 +131,4 @@ Machine-wide conventions go in `~/.claude-wyvrn/conventions/` and apply to every
 
 ## Version
 
-See `~/.claude-wyvrn/VERSION` for the installed harness version. Current: `2.2.0`.
+See `~/.claude-wyvrn/VERSION` for the installed harness version. Current: `2.4.0`.

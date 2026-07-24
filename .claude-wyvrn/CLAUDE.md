@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Wyvrn harness v2.2.0.
+Wyvrn harness v2.4.0.
 
 ## Trigger /flow when
 

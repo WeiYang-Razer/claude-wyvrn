@@ -9,6 +9,8 @@ Drives a change through the red-green-refactor cycle: a failing test exists and 
 
 **Standalone by design.** Invoke directly for a single behavior, or as the implementation discipline inside a larger `/flow`. Never injected into `/flow` automatically.
 
+**Apply mode.** Executing a code-complete plan (`/write-plan` output) is transcription: the plan's test-first ordering already carried the design pressure, so the executor transcribes the plan's code rather than re-deriving the design. It still runs the red-green cycle live. A transcribed test that has never been seen failing is untrusted, and RED is what catches divergence between the plan's assumptions and the actual codebase.
+
 ## Execution principles
 
 - One behavior per cycle. Do not write three tests then three implementations.
@@ -16,6 +18,7 @@ Drives a change through the red-green-refactor cycle: a failing test exists and 
 - Minimal green: write the least code that makes the current test pass. Resist implementing the next behavior early.
 - Refactor only while green, and re-run after every refactor.
 - Parallelize independent reads at Step 1. Within a cycle, steps are sequential by data dependency.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags).
 
 ## Preconditions
 
@@ -80,4 +83,5 @@ Refactoring is optional per cycle — skip if the green code is already clean.
 - Never write implementation code before a failing test for that behavior exists and has been seen failing.
 - Never weaken, skip, or delete a test to force green (`universal.md` §1.6). No `xit`, `@skip`, `[Ignore]`, commented-out asserts.
 - Do not implement behaviors beyond the current test (`universal.md` §1.2 — no speculative code).
+- Source code you write, code blocks inside generated markdown, and every commit message must be strictly 7-bit ASCII — no em-dashes, smart quotes, or other non-ASCII characters. Markdown prose may use them.
 - Do not modify `~/.claude-wyvrn/`.

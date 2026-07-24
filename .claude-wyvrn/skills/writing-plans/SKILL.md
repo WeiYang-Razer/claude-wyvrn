@@ -1,15 +1,17 @@
 ---
 name: write-plan
-description: Break a feature or task into a sequence of atomic tasks, each decomposed into numbered checkbox steps with step-level TDD (failing test → implement → passing test), exact file paths, complete change descriptions, and explicit git add+commit commands. Produces a reviewable plan file in .claude-wyvrn-local/plans/. Trigger when the user says "write a plan for", "plan this out", "break this into tasks", or invokes /write-plan directly.
+description: Break a feature or task into a sequence of atomic tasks, each decomposed into numbered checkbox steps that follow TDD — write the failing test, run it red, implement the minimal code, run it green, commit — with exact file paths, complete code in every step, explicit git add+commit commands, and per-task interfaces so a fresh executor can run each task without the others' context. Produces a reviewable plan file in .claude-wyvrn-local/plans/. Trigger when the user says "write a plan for", "plan this out", "break this into tasks", or invokes /write-plan directly.
 ---
 
 # write-plan
 
-Decomposes a feature into a concrete, reviewable plan whose tasks an agentic worker can execute step-by-step. Each task is broken into atomic, checkboxed steps; each executable-code task follows red-green TDD; every task ends in a self-contained commit so the work is reversible at task granularity. The output is a plan file in `.claude-wyvrn-local/plans/` — the same directory `/flow` already retrieves for past-mistake context.
+Decomposes a feature into a concrete, reviewable plan whose tasks an agentic worker can execute step-by-step. Each task is broken into atomic, checkboxed steps; each task follows the TDD cycle — the failing test is written and **run red** first, then the minimal implementation, then the test **run green** — so the test-first design pressure is exercised at execution time. Every task ends in a self-contained commit so the work is reversible at task granularity. The output is a plan file in `.claude-wyvrn-local/plans/` — the same directory `/flow` already retrieves for past-mistake context.
+
+**TDD execution.** Each task's executor writes the test, runs it to watch it fail for the right reason, writes the minimal code to pass, runs it green, then commits. The plan carries the complete test and implementation code so the executor transcribes rather than re-derives — but the red-green cycle is run live, not skipped.
 
 **Standalone by design.** This skill works on its own. If an approved spec exists in `.claude-wyvrn-local/specs/`, it is used as authoritative input. If no spec exists, the plan is drafted directly from the user's prompt + project context. `/brainstorm` is never required.
 
-**Hand-off target.** The plan is written to be executed by `/subagent-dev` (subagent-driven-development) or `/flow`, task-by-task. The plan header names this explicitly so the executor knows how to run it.
+**Hand-off target.** The plan is written to be executed by `/subagent-dev` (subagent-driven-development) or `/flow`, task-by-task and in order. The plan header names this explicitly so the executor knows how to run it.
 
 ## Execution principles
 
@@ -17,7 +19,11 @@ Decomposes a feature into a concrete, reviewable plan whose tasks an agentic wor
 - No implementation — plan only. The plan is the hand-off to `/flow` or `/subagent-dev`.
 - Tasks must be atomic and independently verifiable. Steps within a task must each be a single ~2–5 minute action.
 - Every task ends in a commit. No "implement everything, then test, then one big commit".
+- **Per-task test scope.** A task's red/green steps run only that task's test(s) via the project's single-test/filter command — never the full suite. The full suite runs exactly once, in the plan's Final verification section after the last task. Use the project's own test commands from the Tech Stack line; never assume a specific tool.
+- Tasks run sequentially in dependency order — earlier tasks never depend on later ones.
 - Spec-optional: a matching spec sharpens scope, but its absence does not block planning.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages (this skill's Step 5 commit, and every commit step written into a plan) use POSIX constructs (heredoc, or multiple `-m` flags).
+- **ASCII-only code and commit messages.** Every code block the plan carries, and every commit message it spells out, must be strictly 7-bit ASCII — no em-dashes, smart quotes, or other non-ASCII characters. Executors transcribe the plan's code verbatim, so a non-ASCII character inside a code block lands in the codebase. The rule is scoped to code blocks and commit messages; the plan's prose may use them.
 
 ## Preconditions
 
@@ -39,7 +45,7 @@ Read in one parallel batch:
 - `.claude-wyvrn-local/specs/` — list files and read any whose slug matches the feature topic (top 1–2). A matching approved spec, when present, is treated as authoritative for scope and acceptance criteria. **If no spec is found, proceed without one — do not prompt the user to brainstorm.**
 - Relevant stack conventions if the target stack is known.
 
-While loading, capture the facts the plan header needs: the **tech stack**, the **build command**, and the **test command** (e.g. how a single test is built and run). If the project has no unit-test harness for the area being touched, note that — it changes how Step 3 writes the test steps.
+While loading, capture the facts the plan header needs: the **tech stack**, the **build command**, the **single-test command** (how one test or filter is built and run), and the **full-suite command** (used once, in Final verification). If the project has no unit-test harness for the area being touched, note that — it changes how Step 3 writes the test steps.
 
 The user's prompt is always the primary input. A spec sharpens the prompt; its absence is not a blocker.
 
@@ -63,30 +69,34 @@ Compose, in order:
 
 - **Goal** — one paragraph: the observable change once the whole plan lands.
 - **Architecture** — the approach in 2–4 sentences: the shape of the solution and the key design decision(s) it commits to (mirror the spec if one exists).
-- **Tech Stack** — language/standard, build system, test framework, and the exact build + single-test commands.
+- **Tech Stack** — language/standard, build system, test framework, and the exact build, single-test, and full-suite commands (taken from the project, whatever its tooling).
 - **Spec** — path to the spec file, or omit the line entirely if there is none.
 - **Executor directive** — a fixed blockquote line, placed as the plan's second line, copied verbatim (no per-plan variation):
-  `> **For agentic workers:** REQUIRED SUB-SKILL: Use `/subagent-dev` (subagent-driven-development, recommended) or `/flow` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.`
-- **File Structure table** — one row per file the plan touches: `File | Responsibility | Change`. This is the at-a-glance map.
-- **Testing note** — state the test strategy and any precedent it follows. If part of the work cannot be unit-tested (no loopback harness, wire-format/IPC, visual rendering, etc.), say so here and say how those tasks are verified instead (build + runtime observation). This is where universal.md §1.6 ("docs/config without logic need no test") is reconciled with the codebase's real test surface — do not invent a test harness the project lacks.
+  `> **For agentic workers:** REQUIRED SUB-SKILL: Use `/subagent-dev` (subagent-driven-development, recommended) or `/flow` to implement this plan task-by-task, in order. Each task follows TDD: write the failing test, run it to confirm it fails for the right reason, implement the minimal code to pass, run the test to confirm it passes, then commit. The plan carries the complete code — transcribe it rather than re-derive, but run the red-green cycle live. Per-task test runs are scoped to that task's tests only; the full suite runs once, in the Final verification section after the last task. Steps use checkbox (`- [ ]`) syntax for tracking: the executor MUST edit this plan file and flip each completed step to `- [x]` — in `/subagent-dev` the orchestrator flips a task's boxes when its review passes; in `/flow` flip each step as it is done.`
+- **Global Constraints** — the spec's project-wide requirements (version floors, dependency limits, naming/copy rules, platform requirements), one line each with exact values copied verbatim. Every task's requirements implicitly include this section. If none apply, write `None.`
+- **File Structure table** — one row per file the plan touches: `File | Responsibility | Change`. This is the at-a-glance map, and where decomposition decisions get locked in.
+- **Testing note** — state the test strategy and any precedent it follows; say which tasks are test-covered (TDD pattern) vs build/verify. If part of the work cannot be unit-tested (no loopback harness, wire-format/IPC, visual rendering, etc.), say so here and say how those tasks are verified instead (build + runtime observation). This is where universal.md §1.6 ("docs/config without logic need no test") is reconciled with the codebase's real test surface — do not invent a test harness the project lacks.
 
 #### 3b — Tasks and steps
 
-Break the feature into atomic tasks (aim for 2–5; see ordering rules below). For each task:
+Break the feature into atomic tasks (aim for 2–5; see ordering rules below). A task is the smallest unit that carries its own test cycle and is worth a fresh reviewer's gate: fold setup, configuration, scaffolding, and documentation into the task whose deliverable needs them; split only where a reviewer could meaningfully reject one task while approving its neighbor. For each task:
 
 - **Heading:** `### Task N: <imperative title>`
 - **Files:** every path the task touches, each tagged `Modify:` / `Create:` / `Test:`. No globs.
+- **Interfaces:**
+  - `Consumes:` what this task uses from earlier tasks — exact signatures.
+  - `Produces:` what later tasks rely on — exact function names, parameter and return types. A task's implementer sees only their own task; this block is how they learn the names and types neighboring tasks use.
 - **Steps:** an ordered list of `- [ ]` checkbox steps, each a single ~2–5 minute action with a bolded label (`**Step 1: <action>**`). Give the exact code/edit inline — no placeholders, no "etc.". A step that changes a function gives the signature and the precise logic.
 
 **TDD step pattern — required for any task that changes executable code:**
 
 1. `**Step 1: Write the failing test**` — the exact test code and where it goes (file + anchor), plus how it is registered/discovered.
-2. `**Step 2: Run the test to verify it fails**` — the exact run command and the expected failure (compile error or assertion), so the worker confirms red for the right reason.
-3. One or more implementation steps — the minimal change to make it pass.
-4. `**Step: Run the test to verify it passes**` — the run command and expected PASS.
+2. `**Step 2: Run the test to confirm it fails**` — the exact single-test command and the expected failure (e.g. `FAIL: function not defined`). This is the red phase; it proves the test exercises the new behavior.
+3. One or more implementation steps — the exact minimal change to make the test pass.
+4. `**Step: Run the test to confirm it passes**` — the same single-test command, expected PASS. This is the green phase. Scope stays on this task's tests only — the step never runs the full suite; that happens once, in Final verification.
 5. `**Step: Commit**` — see commit step below.
 
-**Non-TDD tasks** (docs, config without logic, or code whose area genuinely has no test harness per the Testing note): replace steps 1–4 with the implementation steps followed by a **build/verify step** — the exact build command plus a concrete observable check (a grep that must match, a log line that must/must not appear, a runtime behavior to eyeball). Never a bare "it should work".
+**Non-test tasks** (docs, config without logic, or code whose area genuinely has no test harness per the Testing note): replace the red-green steps with the implementation steps followed by a **build/verify step** — the exact build command plus a concrete observable check (a grep that must match, a log line that must/must not appear, a runtime behavior to eyeball). Never a bare "it should work".
 
 **Commit step — required as the last step of every task:**
 
@@ -107,8 +117,11 @@ git commit -m "<type>(<scope>): <subject>"
 - Infrastructure tasks (types, interfaces, data models, wire formats) before logic tasks.
 - Logic tasks before integration tasks.
 - Integration tasks before UI/consumer tasks.
+- Task numbering must be a valid topological order — no task consumes an interface a higher-numbered task produces. A sequential executor just runs the numbers.
 
 Aim for 2–5 tasks per plan, each with roughly 3–8 steps. If a feature genuinely requires more tasks, split into two plan files (Part 1 / Part 2).
+
+**Final verification — required once, after the last task:** a short checkbox section (not a numbered task) that runs the full test suite with the exact full-suite command, expected all PASS. This is the only place the plan runs the full suite; every task stays scoped to its own tests. If the full-suite run fails on something a task's scoped run missed, the executor fixes it before the plan is considered done.
 
 #### 3c — Closing sections
 
@@ -123,50 +136,51 @@ Worked example (condensed from a real cross-repo plan):
 
 > The emulator (separate repo) must add a `DeviceCanvasUpdated` (msg type 10) handler that, keyed by device identity, stores the W×H RGBA grid and composites locally: clear → space → device-on-top (replace-if-lit). The protocol handshake must accept v4. This plan delivers only the publisher half.
 
-**Self-Review notes.** Four checks (see the Step 3d gate — these are completed *before* review, not after):
+**Self-Review notes.** Three checks (see the Step 3d gate — these are completed *before* review, not after):
 
 1. **Spec coverage** — every spec requirement (or, spec-less, every stated goal/AC) mapped to the task(s) that deliver it, each ticked ✓.
-2. **Placeholder scan** — confirm no `TBD`/`TODO`/"similar to"/"handle edge cases"/"etc." anywhere; every step carries the full exact change (enforces universal.md §1.2).
-3. **Type/name consistency** — list every new symbol (function, type, enum value + its number, field, message name); confirm each is spelled identically in every task it appears in.
-4. **Ordering invariants** — call out any sequencing that must hold (init-before-use, validity-before-consume, an interface + its override landing in the same task to keep the tree compiling).
+2. **Placeholder scan** — confirm no `TBD`/`TODO`/"similar to"/"handle edge cases"/"etc." anywhere; every step carries the full exact change (enforces universal.md §1.2). Also confirm every code block and commit message in the plan is strictly 7-bit ASCII (no em-dashes, smart quotes, or other non-ASCII characters). Prose is exempt — scan the fenced blocks and the `git commit -m` subjects only.
+3. **Type/name consistency** — list every new symbol (function, type, enum value + its number, field, message name); confirm each is spelled identically in every task it appears in, and that every symbol a later task's `Consumes:` names is produced by an earlier task's `Produces:`.
 
 Worked example:
 
 > - **Spec coverage:** clear→space→device ordering → Tasks 2/4/3 ✓; replace-if-lit blend → Task 1 + truth-table test ✓; persistent device layer → Task 2 ✓.
 > - **Placeholder scan:** no TBD/TODO/"similar to" — every code step shows full code ✓.
-> - **Type consistency:** `Overrides(const CColor&)`, `CompositeOver(const CColor&, const CColor&)`, `CompositeDeviceLayer()` (void), `m_DeviceLayer` (CCanvas) — spelled identically in every task ✓.
-> - **Ordering invariants:** `m_DeviceLayer` sized before composite; space write composites onto the cleared base, not over it ✓.
+> - **Type consistency:** `Overrides(const CColor&)`, `CompositeOver(const CColor&, const CColor&)`, `CompositeDeviceLayer()` (void), `m_DeviceLayer` (CCanvas) — spelled identically in every task; Task 3 Consumes `CompositeOver` produced by Task 1 ✓.
 
 #### 3d — Self-Review gate (mandatory, before Step 4)
 
-Run the four Self-Review checks against the drafted plan **before** emitting it for review. If any check fails — an unmapped requirement, a placeholder, an inconsistent symbol, an unstated ordering dependency — fix the plan first. Never emit a plan for approval with an unfilled or failing Self-Review.
+Run the three Self-Review checks against the drafted plan **before** emitting it for review. If any check fails — an unmapped requirement, a placeholder, an inconsistent symbol, a consumed symbol no task produces — fix the plan first. Never emit a plan for approval with an unfilled or failing Self-Review.
 
-### Step 4 — Review
+### Step 4 — Write draft plan file and review
 
-Emit the full plan (header + tasks + closing sections, **including the completed Self-Review**) as a chat message. AskUserQuestion header `Plan`, options `[Save plan, Refine, Abort]`.
+Write the full plan (header + tasks + closing sections, **including the completed Self-Review**) to `.claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md` where `<slug>` is a lowercase-hyphenated summary of the feature (≤5 words). Create `plans/` if missing (should already exist from any prior `/flow` run). Do NOT commit yet — the file exists so the user reviews it in their editor with full rendering instead of scrolling chat output.
+
+Emit the file path plus a one-line summary (`Tasks: N   Steps: M`). Do NOT paste the full plan into chat. Then emit AskUserQuestion with header `Plan`, question text naming the file path, options `[Save plan, Save plan & run subagent-dev, Refine, Abort]`.
 
 - `Save plan` → Step 5.
-- `Refine` (or "Other" + text) → incorporate feedback, re-run the Step 3d gate, re-emit, repeat Step 4.
-- `Abort` → halt. Do not write any file.
-
-### Step 5 — Write plan file
-
-Write `.claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md` where `<slug>` is a lowercase-hyphenated summary of the feature (≤5 words). Create `plans/` if missing (should already exist from any prior `/flow` run).
+- `Save plan & run subagent-dev` → Step 5, then chain into `/subagent-dev` (see Step 5).
+- `Refine` (or "Other" + text) → edit the plan file in place, re-run the Step 3d gate, emit a one-line note of what changed, repeat Step 4.
+- `Abort` → delete the draft plan file, halt.
 
 File format (the outer fence is four backticks only so the inner ```bash``` / language fences render literally — do not copy the four-backtick fence into the plan):
 
 ```` markdown
 # <Feature title> — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use `/subagent-dev` (subagent-driven-development, recommended) or `/flow` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use `/subagent-dev` (subagent-driven-development, recommended) or `/flow` to implement this plan task-by-task, in order. Each task follows TDD: write the failing test, run it to confirm it fails for the right reason, implement the minimal code to pass, run the test to confirm it passes, then commit. The plan carries the complete code — transcribe it rather than re-derive, but run the red-green cycle live. Per-task test runs are scoped to that task's tests only; the full suite runs once, in the Final verification section after the last task. Steps use checkbox (`- [ ]`) syntax for tracking: the executor MUST edit this plan file and flip each completed step to `- [x]` — in `/subagent-dev` the orchestrator flips a task's boxes when its review passes; in `/flow` flip each step as it is done.
 
 **Goal:** <one paragraph — the observable change once the plan lands>
 
 **Architecture:** <2–4 sentences — approach and key design decisions>
 
-**Tech Stack:** <language/standard, build system, test framework; build + single-test commands>
+**Tech Stack:** <language/standard, build system, test framework; build, single-test, and full-suite commands>
 
 **Spec:** <path to spec file>   ← omit this line entirely if there is no spec
+
+## Global Constraints
+
+<project-wide requirements, one line each with exact values; "None." if none apply>
 
 ---
 
@@ -176,7 +190,7 @@ File format (the outer fence is four backticks only so the inner ```bash``` / la
 |---|---|---|
 | `path/to/file` | <what it owns> | <what this plan changes in it> |
 
-**Testing note:** <test strategy + precedent; which tasks are TDD vs build/verify and why>
+**Testing note:** <test strategy + precedent; which tasks are test-covered (TDD pattern) vs build/verify and why>
 
 ---
 
@@ -187,20 +201,24 @@ File format (the outer fence is four backticks only so the inner ```bash``` / la
 - Create: `path/...`
 - Test: `path/...`
 
+**Interfaces:**
+- Consumes: <exact signatures used from earlier tasks, or "none">
+- Produces: <exact names + types later tasks rely on, or "none">
+
 - [ ] **Step 1: Write the failing test**
 
   <exact test code + where it goes + how it's registered>
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [ ] **Step 2: Run the test to confirm it fails**
 
   Run: `<single-test command>`
-  Expected: FAIL — <compile error or assertion that must fire>
+  Expected: FAIL (<reason, e.g. "function not defined">).
 
 - [ ] **Step 3: <implementation step>**
 
   <exact change>
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [ ] **Step 4: Run the test to confirm it passes**
 
   Run: `<single-test command>`
   Expected: PASS.
@@ -220,6 +238,15 @@ git commit -m "<type>(<scope>): <subject>"
 
 ---
 
+## Final verification
+
+- [ ] **Run the full test suite**
+
+  Run: `<full-suite command>`
+  Expected: all tests PASS. Fix any failure before declaring the plan done.
+
+---
+
 ## Out of scope
 
 <one line: what this plan excludes. When work lands in another repo/team/follow-up,
@@ -230,29 +257,49 @@ struct/API shapes, ordering semantics. When nothing applies:
 ## Self-Review notes
 
 - **Spec coverage:** <each spec requirement / goal → the task(s) that deliver it, ✓>
-- **Placeholder scan:** <confirm no TBD/TODO/"similar to"/"etc." — every step shows full code ✓>
-- **Type/name consistency:** <list each new symbol (incl. enum value + number); spelled identically everywhere ✓>
-- **Ordering invariants:** <sequencing that must hold — init-before-use, validity-before-consume, ... ✓>
+- **Placeholder scan:** <confirm no TBD/TODO/"similar to"/"etc." — every step shows full code; code blocks and commit messages are ASCII-only ✓>
+- **Type/name consistency:** <list each new symbol (incl. enum value + number); spelled identically everywhere; every Consumes matched by an earlier Produces ✓>
 ````
+
+### Step 5 — Commit plan file
+
+**Branch guard (before staging anything).** Run `git branch --show-current`. If it prints `develop`, `master`, or `main` — or nothing, meaning detached HEAD — do NOT commit. `gitflow.md` §1 prohibits direct commits to the integration and release branches, and the same gate binds `/wyvrn-commit`. Emit the plan path, state which protected branch HEAD is on, and AskUserQuestion header `Commit`, options `[Leave plan uncommitted, Commit here anyway]`. `Leave plan uncommitted` → skip the commit, keep the plan file on disk, and say so in the Step 5 emission; the hand-off to `/subagent-dev` still proceeds if it was chosen. `Commit here anyway` → proceed. Otherwise commit without asking.
+
+On `Save plan` (or `Save plan & run subagent-dev`), commit the plan file on the current branch:
+
+```bash
+git add .claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md
+git commit -m "docs(plans): add <slug> implementation plan"
+```
+
+- `git add` lists only the plan file — never `git add -A`.
+- The message follows `gitflow.md` §3.
+- A single `-m` line only. Do NOT append a `Co-Authored-By` trailer, a "Generated with" footer, or any other trailer.
+- Commit on the current branch. Do not create branches, switch branches, push, or open PRs.
 
 Emit:
 
 ```
-Plan written: .claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md
+Plan written and committed: .claude-wyvrn-local/plans/YYYY-MM-DD-<slug>-plan.md
 
 Tasks: N   Steps: M
-Next: /subagent-dev <plan-file> to execute with subagents, or /flow referencing each task.
+Next: /subagent-dev <plan-file> to execute with subagents (sequential, review between tasks), or /flow referencing each task.
 ```
+
+If the branch guard skipped the commit, replace the first line with `Plan written (uncommitted, HEAD on <branch>): <path>`.
+
+If the user chose `Save plan & run subagent-dev` at Step 4: after emitting, invoke the `subagent-driven-development` skill (`/subagent-dev`) with the written plan file path. This skill's no-implementation constraints end at that hand-off; `/subagent-dev` runs under its own rules and does implement.
 
 ## Stop conditions
 
-- User aborts at any step → halt, no file written.
+- User aborts at any step → halt; delete the draft plan file if one was written, leave nothing committed.
 - Feature is too vague to decompose → ask one round of clarifying questions in Step 2. If still vague after clarification, halt and tell the user the prompt is too ambiguous to plan against (do not produce a vague plan, but do not require any specific upstream skill either).
 
 ## Constraints
 
 - Do NOT produce implementation code in the working tree. The plan *contains* exact code to write, but this skill does not apply it.
 - Do NOT modify source files, configs, or anything outside `.claude-wyvrn-local/plans/`.
+- The only permitted git operations are the Step 5 `git add` + `git commit` of the plan file.
 - Do NOT modify `~/.claude-wyvrn/`.
 - Do NOT invent a test harness the project does not have — honor the Testing note from Step 3a.
 - All confirmations via `AskUserQuestion`.

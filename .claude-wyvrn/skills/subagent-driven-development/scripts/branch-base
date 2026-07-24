@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Print the commit the current branch was cut from: the merge base between HEAD
+# and the repository's integration branch.
+#
+# gitflow.md makes `develop` the integration branch, but not every repository
+# has one - a harness-only or single-branch repo may carry just `main`. Passing
+# a hardcoded `develop` to `git merge-base` fails there, which silently breaks
+# the whole-branch review package at the very end of a run. Resolve in order:
+# develop, main, master, then the remote's default branch.
+#
+# Usage: branch-base [INTEGRATION_BRANCH]
+set -euo pipefail
+
+if [ $# -gt 1 ]; then
+  echo "usage: branch-base [INTEGRATION_BRANCH]" >&2
+  exit 2
+fi
+
+if [ $# -eq 1 ]; then
+  branch=$1
+  git rev-parse --verify --quiet "$branch" >/dev/null ||
+    { echo "no such branch: $branch" >&2; exit 2; }
+else
+  branch=
+  for candidate in develop main master; do
+    if git rev-parse --verify --quiet "$candidate" >/dev/null; then
+      branch=$candidate
+      break
+    fi
+  done
+  if [ -z "$branch" ]; then
+    branch=$(git symbolic-ref --short --quiet refs/remotes/origin/HEAD || true)
+    [ -n "$branch" ] ||
+      { echo "no integration branch found (tried develop, main, master, origin/HEAD); pass one explicitly" >&2; exit 2; }
+  fi
+fi
+
+git merge-base "$branch" HEAD ||
+  { echo "no merge base between ${branch} and HEAD" >&2; exit 2; }

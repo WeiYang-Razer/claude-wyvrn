@@ -15,6 +15,7 @@ A hard gate between "I think this is finished" and telling the user it is finish
 - Parallelize evidence collection — independent build/test/lint commands run in one batch.
 - A single unmet criterion makes the verdict NOT VERIFIED. No partial "done".
 - Honest gaps beat false confidence. Reporting "I could not verify X" is a success of this skill, not a failure.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings use POSIX constructs (heredoc).
 
 ## Preconditions
 

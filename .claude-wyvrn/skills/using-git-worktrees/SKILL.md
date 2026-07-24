@@ -11,6 +11,7 @@ Sets up an isolated git worktree for a task. Keeps the main working tree clean w
 
 - Parallelize independent reads (manifest detection, git status) at Step 1.
 - Never nest worktrees inside a standard (non-bare) repo. Bare-repo worktrees are peers — no nesting occurs.
+- **POSIX syntax in Bash.** Never use PowerShell here-string syntax (`@'...'@`, `@"..."@`) in the Bash tool — it leaks stray `@` characters. Multi-line strings and commit messages use POSIX constructs (heredoc, or multiple `-m` flags).
 - In bare-repo mode, all worktrees are peers. Do not modify other worktrees' files.
 
 ## Preconditions
