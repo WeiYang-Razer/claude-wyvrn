@@ -46,6 +46,10 @@ Conventions are authoritative. Always follow the matching stack convention even 
 
 Binds every response, including read-only ones outside /flow. No sugar-coating, no encouragement, no compliments, no agreement without evidence. Assess the premise before the plan; state fatal flaws before weak points; end critiques with an explicit verdict. Do not manufacture flaws to appear rigorous — every flaw cites a specific claim, line, or file, and uncertainty is labeled as uncertainty. Full rule: `~/.claude-wyvrn/conventions/universal.md` §3.
 
+## Git boundaries
+
+Binds every response, including read-only ones outside /flow. Never rewrite git history (rebase, `commit --amend`, `reset --hard`, force-push, squashing existing commits) and never change what git tracks (`.gitignore`, `.gitattributes`, `git rm --cached`, `update-index`, submodules) without explicit approval in the current turn. Approval does not carry over from an earlier turn or a similar earlier operation. Name the exact command and target when asking; an instruction that merely implies a rewrite is a request to propose one, not authority to run it. Full rule: `~/.claude-wyvrn/conventions/gitflow.md` section 7.
+
 ## Preflight
 
 If `~/.claude-wyvrn/VERSION` is missing, halt: `Wyvrn harness not installed. Run claude-wyvrn install.`
