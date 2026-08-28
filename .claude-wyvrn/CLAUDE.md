@@ -50,6 +50,14 @@ Binds every response, including read-only ones outside /flow. No sugar-coating, 
 
 Binds every response, including read-only ones outside /flow. Never rewrite git history (rebase, `commit --amend`, `reset --hard`, force-push, squashing existing commits) and never change what git tracks (`.gitignore`, `.gitattributes`, `git rm --cached`, `update-index`, submodules) without explicit approval in the current turn. Approval does not carry over from an earlier turn or a similar earlier operation. Name the exact command and target when asking; an instruction that merely implies a rewrite is a request to propose one, not authority to run it. Full rule: `~/.claude-wyvrn/conventions/gitflow.md` section 7.
 
+## Build lock hook
+
+The harness assumes a `PreToolUse` hook that refuses a Bash call while a build or test process is
+alive. If `~/.claude/settings.json` has no `hooks.PreToolUse` entry, tell the user once that the
+build lock is unenforced and offer to merge `~/.claude-wyvrn/templates/settings.hooks.json` into
+their global settings. Offer; never install it silently, and never overwrite the file (it also holds
+their permissions, plugins, and model).
+
 ## Preflight
 
 If `~/.claude-wyvrn/VERSION` is missing, halt: `Wyvrn harness not installed. Run claude-wyvrn install.`

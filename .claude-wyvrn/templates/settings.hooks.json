@@ -1,0 +1,28 @@
+{
+  "_comment": "Wyvrn harness hook template. Merge the `hooks` key into your own ~/.claude/settings.json - do not replace the file, it also holds your permissions, plugins, and model. PreToolUse: refuses any Bash call while a build or test process is alive, so two toolchain invocations can never overlap. Concurrent ctest/cmake runs have hard-crashed developer machines. PostToolUse: runs clang-format on edited C++ sources only. Requires clang-format on PATH; if it is absent the hook fails loudly on every C++ edit, so install it or drop the PostToolUse block.",
+  "_caveat_pretooluse": "This blocks EVERY Bash call while ctest/cmake/hostharness is running, not just build commands - including the command that would kill a stale orphan. If you get stuck, sweep from PowerShell instead: Get-Process hostharness,ctest,cmake | Stop-Process -Force",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -Command \"$c = @(Get-Process ctest,cmake,hostharness -ErrorAction SilentlyContinue); if ($c.Count -gt 0) { Write-Error 'BLOCKED: build/test process already running. Kill it or wait.'; exit 2 }\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -Command \"$f = @($env:CLAUDE_FILE_PATHS -split ' ' | Where-Object { $_ -match '\\.(cpp|cc|cxx|h|hpp|hxx)$' }); if ($f.Count -gt 0) { clang-format -i $f }\""
+          }
+        ]
+      }
+    ]
+  }
+}
