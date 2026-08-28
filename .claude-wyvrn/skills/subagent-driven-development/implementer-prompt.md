@@ -47,13 +47,21 @@ Subagent (general-purpose):
 
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
-    2. Follow TDD (/test-driven-development): write the failing test, run it to
-       confirm it fails for the right reason (RED), write the minimal code to
-       make it pass, run it to confirm it passes (GREEN). The brief carries the
-       complete code — transcribe it rather than re-derive, adapting only where
-       the actual codebase differs from the brief's assumptions and recording
-       every deviation in your report — but run the red-green cycle live.
-    3. Verify implementation works
+    2. Follow TDD (/test-driven-development), but DO NOT RUN ANYTHING. You may
+       never invoke `cmake`, `ninja`, or `ctest`, or any wrapper around them
+       (`wyvrnpm build`, `wyvrnpm test`, build scripts, IDE tasks). The
+       orchestrator owns the toolchain and runs every build and test serially;
+       concurrent invocations have crashed this machine. Instead:
+       a. Write the failing test. Commit it alone. Report status RED-PENDING and
+          name the exact focused test target the orchestrator should run.
+       b. Wait. The orchestrator runs it, confirms it fails for the right reason,
+          and dispatches you again to implement.
+       c. Write the minimal code to make it pass. Commit. The orchestrator
+          confirms GREEN.
+       The brief carries the complete code — transcribe it rather than re-derive,
+       adapting only where the actual codebase differs from the brief's
+       assumptions and recording every deviation in your report.
+    3. Reason about correctness by reading the code — you cannot execute it
     4. Commit your work [only if the brief's steps say to]. Use a single `-m`
        message. Do NOT append a `Co-Authored-By` trailer, a "Generated with"
        footer, or any other trailer. In the Bash tool, never use PowerShell
@@ -69,8 +77,9 @@ Subagent (general-purpose):
     questions**. It's always OK to pause and clarify. Don't guess or make
     assumptions.
 
-    While iterating, run the focused test for what you're changing; run the
-    affected suite once before committing, not after every edit.
+    You do not run tests or builds at all — that is the orchestrator's job (see
+    the no-toolchain rule above). Name the focused test target for what you
+    changed so the orchestrator can run exactly that, and nothing wider.
 
     ## Code Organization
 
@@ -125,8 +134,10 @@ Subagent (general-purpose):
 
     **Testing:**
     - Do tests actually verify behavior (not just mock behavior)?
-    - Did I follow TDD — red before green — and record any deviation from the
-      brief's code?
+    - Did I write the test before the implementation, and record any deviation
+      from the brief's code?
+    - Did I avoid invoking the toolchain entirely (no cmake/ninja/ctest, no
+      wrappers)?
     - Are tests comprehensive?
     - Is the test output pristine (no stray warnings or noise)?
 
@@ -134,29 +145,33 @@ Subagent (general-purpose):
 
     ## After Review Findings
 
-    If a reviewer finds issues and you fix them, re-run the tests that cover the
-    amended code and append the results to your report file. Reviewers will not
-    re-run tests for you — your report is the test evidence.
+    If a reviewer finds issues and you fix them, apply the fix and name the test
+    target covering the amended code in your report. Do not run it — the
+    orchestrator runs that target after you return, and its output is the test
+    evidence. Reviewers do not run tests either; nobody but the orchestrator does.
 
     ## Report Format
 
     Write your full report to [REPORT_FILE]:
     - What you implemented (or what you attempted, if blocked)
-    - What you tested and test results
+    - What the change is expected to do, and why you believe it is correct
     - **TDD Evidence:**
-      - RED: command run, relevant failing output before implementation, and why
-        the failure was expected
-      - GREEN: command run and relevant passing output after implementation
+      - The exact focused test target(s) the orchestrator must run
+      - Why the test is expected to fail before the implementation lands, and
+        what failure message you expect
       - Every deviation from the brief's code with its reason
+      - NO test output. You did not run anything; do not report results you did
+        not observe.
     - Files changed
     - Self-review findings (if any)
     - Any issues or concerns
 
     Then report back with ONLY (under 15 lines — the detail lives in the report
     file):
-    - **Status:** DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
+    - **Status:** RED-PENDING | DONE | DONE_WITH_CONCERNS | BLOCKED | NEEDS_CONTEXT
     - Commits created (short SHA + subject)
-    - One-line test summary (e.g. "14/14 passing, output pristine")
+    - The focused test target the orchestrator should run (never test results —
+      you did not run anything)
     - Your concerns, if any
     - The report file path
 

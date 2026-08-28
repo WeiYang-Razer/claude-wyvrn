@@ -61,16 +61,20 @@ Subagent (general-purpose):
 
     ## Tests
 
-    The implementer already ran the tests and reported results with TDD (red
-    then green) evidence for exactly this code. Do not re-run the suite to
-    confirm their report. Run a
-    test only when reading the code raises a specific doubt that no existing run
-    answers — and then a focused test, never a package-wide suite, race detector
-    run, or repeated/high-count loop. If heavy validation seems warranted,
-    recommend it in your report instead of running it. If you cannot run commands
-    in this environment, name the test you would run.
+    **You may NEVER invoke `cmake`, `ninja`, or `ctest`, or any wrapper around
+    them (`wyvrnpm build`, `wyvrnpm test`, build scripts, IDE tasks).** The
+    orchestrator owns the toolchain and runs every build and test serially;
+    concurrent invocations have crashed this machine. This is absolute — it
+    holds even for a single focused test, and even when reading the code raises a
+    specific doubt.
 
-    Warnings or other noise in the implementer's reported test output are
+    The RED and GREEN evidence attached to this review is the orchestrator's own
+    output for exactly this code. Judge the tests by reading them and that output.
+    If you believe further validation is warranted — a race detector run, a
+    high-count loop, a wider suite — name the exact command in your report and
+    recommend it. Do not run it.
+
+    Warnings or other noise in the orchestrator's reported test output are
     findings — test output should be pristine.
 
     ## Part 1: Spec Compliance
