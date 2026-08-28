@@ -1,4 +1,4 @@
-# Wyvrn Claude harness — v2.4.0
+# Wyvrn Claude harness — v2.5.0
 
 A lean, opinionated structure that lets Claude Code run development work autonomously, predictably, and **fast**.
 
@@ -10,6 +10,7 @@ v2.0.0 replaces v1.x's five-phase orchestration (clarifier subagent → reuse-hi
 - **`/wyvrn-refresh-context` skill** — populates and syncs `.claude-wyvrn-local/PROJECT.md`, `ARCHITECTURE.md`, and project-specific conventions from the codebase. Also absorbs lessons from /flow mistakes.
 - **`/migrate-foreign-framework` skill** — migrates projects with hand-written `CLAUDE.md` or other ad-hoc Claude setups into the harness layout.
 - **Conventions** — universal + gitflow + six stacks (JavaScript, TypeScript, Python, C#, C++, React).
+- **Adversarial honesty** (v2.5.0) — `universal.md` §3 plus a pointer in the project-root `CLAUDE.md`. No sugar-coating, no agreement without evidence, premise attacked before plan, explicit verdict on every critique, and a guard against manufacturing flaws to look rigorous. Binds every response, including read-only ones outside `/flow`.
 - **Learning logs** — every /flow run writes a free-form markdown summary to `.claude-wyvrn-local/plans/` focused on mistakes Claude made and how the human corrected them, plus an estimate of the time the agent saved versus a human-only implementation. /flow retrieves relevant past logs when starting similar tasks.
 
 ## What v2.0.0 dropped (breaking change from v1.x)
@@ -32,7 +33,7 @@ If you're upgrading from v1.x:
 
 | Path | Purpose |
 |---|---|
-| `VERSION` | `2.4.0` |
+| `VERSION` | `2.5.0` |
 | `CLAUDE.md` | Template copied to project root by `claude-wyvrn setup`. |
 | `conventions/universal.md` | Universal code rules. |
 | `conventions/gitflow.md` | Branching and commit conventions. |
@@ -117,7 +118,7 @@ The CLI itself is maintained separately from this repository.
 ## Customization
 
 - **`.claude-wyvrn-local/PROJECT.md`** — project specification. Domain context, gotchas, idioms, where things live. Auto-drafted via `/wyvrn-refresh-context` on a fresh install. Used by `/flow` as project context.
-- **`.claude-wyvrn-local/conventions/<stack>.md`** — project-specific stack conventions. Overrides any matching global conventions per `universal.md` §3. Use `~/.claude-wyvrn/templates/conventions.md` as the starting template (or let `/wyvrn-refresh-context` create it).
+- **`.claude-wyvrn-local/conventions/<stack>.md`** — project-specific stack conventions. Overrides any matching global conventions per `universal.md` §4. Use `~/.claude-wyvrn/templates/conventions.md` as the starting template (or let `/wyvrn-refresh-context` create it).
 - **`.claude-wyvrn-local/ARCHITECTURE.md`** — module map and invariants. Auto-drafted via `/wyvrn-refresh-context` from the codebase.
 - **Plan review pause** — declare `plan-review: on` in PROJECT.md to make `/flow` pause for plan approval before implementation. Default `off`.
 
@@ -131,4 +132,4 @@ Machine-wide conventions go in `~/.claude-wyvrn/conventions/` and apply to every
 
 ## Version
 
-See `~/.claude-wyvrn/VERSION` for the installed harness version. Current: `2.4.0`.
+See `~/.claude-wyvrn/VERSION` for the installed harness version. Current: `2.5.0`.

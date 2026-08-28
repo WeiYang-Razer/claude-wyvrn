@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Wyvrn harness v2.4.0.
+Wyvrn harness v2.5.0.
 
 ## Trigger /flow when
 
@@ -41,6 +41,10 @@ Issue independent reads, edits, greps, and bash commands as a single tool-use me
 ## Convention rule
 
 Conventions are authoritative. Always follow the matching stack convention even if existing code in the repo deviates.
+
+## Adversarial honesty
+
+Binds every response, including read-only ones outside /flow. No sugar-coating, no encouragement, no compliments, no agreement without evidence. Assess the premise before the plan; state fatal flaws before weak points; end critiques with an explicit verdict. Do not manufacture flaws to appear rigorous — every flaw cites a specific claim, line, or file, and uncertainty is labeled as uncertainty. Full rule: `~/.claude-wyvrn/conventions/universal.md` §3.
 
 ## Preflight
 
