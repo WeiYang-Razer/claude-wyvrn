@@ -1,6 +1,9 @@
 {
-  "_comment": "Wyvrn harness hook template. Merge the `hooks` key into your own ~/.claude/settings.json - do not replace the file, it also holds your permissions, plugins, and model. PreToolUse: refuses any Bash or PowerShell tool call while a process named in <project>/.claude-wyvrn-local/build-lock-processes is alive (plain text, one process name per line, e.g. cmake/ninja/ctest for a C++ project), so two toolchain invocations can never overlap; a project without the file is never blocked. Concurrent build/test runs have hard-crashed developer machines. PostToolUse: runs clang-format on edited C++ sources only. Requires clang-format on PATH; if it is absent the hook fails loudly on every C++ edit, so install it or drop the PostToolUse block.",
-  "_caveat_pretooluse": "This blocks EVERY Bash and PowerShell tool call while a listed process is running, not just build commands - including the in-session command that would kill a stale orphan. If you get stuck, sweep from a terminal outside Claude Code: Get-Process <listed names> | Stop-Process -Force",
+  "_comment": "Wyvrn harness hook template. Merge the `hooks` key into your own ~/.claude/settings.json - do not replace the file, it also holds your permissions, plugins, and model. Replace <YOUR-HOME> in both commands with your home directory, using forward slashes (e.g. C:/Users/you) so no backslash escaping is needed. PreToolUse: refuses any Bash or PowerShell tool call while a process named in <project>/.claude-wyvrn-local/build-lock-processes is alive (plain text, one process name per line, e.g. cmake/ninja/ctest for a C++ project), so two toolchain invocations can never overlap; a project without the file is never blocked. Concurrent build/test runs have hard-crashed developer machines. PostToolUse: runs clang-format on edited C++ sources only, and no-ops with one warning if clang-format is not on PATH.",
+  "_caveat_file_not_command": "Both hooks MUST be wired with -File pointing at the shipped script, never an inline -Command. Claude Code passes the hook `command` string through a POSIX shell before running it, and that shell strips PowerShell's `$var`, `$env:VAR` and `$_`. An inline -Command body therefore reaches powershell.exe mangled, dies with a parse error, and exits 1 - which for a PreToolUse hook means the lock silently never blocks anything. Earlier versions of this template shipped the inline form and did exactly that.",
+  "_caveat_pretooluse": "The lock blocks EVERY Bash and PowerShell tool call while a listed process is running, not just build commands - including the in-session command that would kill a stale orphan. If you get stuck, sweep from a terminal outside Claude Code: Get-Process <listed names> | Stop-Process -Force",
+  "_caveat_process_names": "Names are matched the way Get-Process matches them: no .exe suffix. `cmake` blocks, `cmake.exe` matches nothing and silently never blocks. Wildcards (`test_*`) work. Lines starting with # are comments.",
+  "_caveat_not_a_mutex": "This is a poll at tool-call time, not a held lock. Two sessions that start a build in the same instant both pass the check. It catches an already-running build, not a simultaneous start.",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,7 +11,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -Command \"$d = $env:CLAUDE_PROJECT_DIR; if (-not $d) { $d = (Get-Location).Path }; $f = Join-Path $d '.claude-wyvrn-local/build-lock-processes'; if (Test-Path $f) { $n = @(Get-Content $f | Where-Object { $_.Trim() }); if ($n.Count -gt 0) { $c = @(Get-Process -Name $n -ErrorAction SilentlyContinue); if ($c.Count -gt 0) { Write-Error 'BLOCKED: build/test process already running. Kill it or wait.'; exit 2 } } }\""
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"<YOUR-HOME>/.claude-wyvrn/templates/build-lock.ps1\""
           }
         ]
       }
@@ -19,7 +22,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -Command \"$f = @($env:CLAUDE_FILE_PATHS -split ' ' | Where-Object { $_ -match '\\.(cpp|cc|cxx|h|hpp|hxx)$' }); if ($f.Count -gt 0) { clang-format -i $f }\""
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"<YOUR-HOME>/.claude-wyvrn/templates/clang-format-edited.ps1\""
           }
         ]
       }

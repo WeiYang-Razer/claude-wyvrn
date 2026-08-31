@@ -38,7 +38,10 @@ If you're upgrading from v1.x:
 | `conventions/universal.md` | Universal code rules. |
 | `conventions/gitflow.md` | Branching and commit conventions. |
 | `conventions/<stack>.md` | Stack-specific rules (javascript, typescript, python, csharp, cpp, react). |
-| `templates/conventions.md` | Only template kept; used by `/wyvrn-refresh-context` when creating a new project stack-conventions file. |
+| `templates/conventions.md` | Starting template used by `/wyvrn-refresh-context` when creating a new project stack-conventions file. |
+| `templates/settings.hooks.json` | Hook block to merge into `~/.claude/settings.json`. Wires both hooks below with `-File`; see the `_caveat_file_not_command` note in the file before switching either to an inline `-Command`. |
+| `templates/build-lock.ps1` | `PreToolUse` build lock. Refuses a Bash or PowerShell tool call while any process named in `.claude-wyvrn-local/build-lock-processes` is alive. Fails closed once a project has opted in. |
+| `templates/clang-format-edited.ps1` | `PostToolUse` formatter. Runs `clang-format -i` over edited C++ sources; no-ops with one warning when `clang-format` is off PATH. |
 | `skills/flow/SKILL.md` | `/flow` — inline runbook. One of the two execution modes. |
 | `skills/subagent-driven-development/` | `/subagent-dev` — the other execution mode: a fresh implementer subagent per task, a reviewer subagent gating each one. Ships `implementer-prompt.md`, `task-reviewer-prompt.md`, and `scripts/` (`sdd-workspace`, `task-brief`, `review-package`, `branch-base`). |
 | `skills/brainstorming/SKILL.md` | `/brainstorm` — design gate; writes an approved spec. |
