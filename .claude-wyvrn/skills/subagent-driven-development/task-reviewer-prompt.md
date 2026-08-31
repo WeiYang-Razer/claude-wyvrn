@@ -61,16 +61,24 @@ Subagent (general-purpose):
 
     ## Tests
 
-    The implementer already ran the tests and reported results with TDD (red
-    then green) evidence for exactly this code. Do not re-run the suite to
-    confirm their report. Run a
-    test only when reading the code raises a specific doubt that no existing run
-    answers — and then a focused test, never a package-wide suite, race detector
-    run, or repeated/high-count loop. If heavy validation seems warranted,
-    recommend it in your report instead of running it. If you cannot run commands
-    in this environment, name the test you would run.
+    **You may NEVER invoke the project's build or test toolchain — [TOOLCHAIN]
+    — or any wrapper around it (build scripts, IDE tasks).** The orchestrator
+    owns the toolchain and runs every build and test serially; concurrent
+    invocations have hard-crashed development machines. This is absolute — it
+    holds even for a single focused test, and even when reading the code raises a
+    specific doubt.
 
-    Warnings or other noise in the implementer's reported test output are
+    The orchestrator's own RED and GREEN output for this task's focused test
+    target — the only test evidence in this review:
+
+    [TEST_EVIDENCE]
+
+    Judge the tests by reading them and that output. If you believe further
+    validation is warranted — a race detector run, a high-count loop, a wider
+    suite — name the exact command in your report and recommend it. Do not run
+    it.
+
+    Warnings or other noise in the orchestrator's reported test output are
     findings — test output should be pristine.
 
     ## Part 1: Spec Compliance
@@ -163,6 +171,13 @@ Subagent (general-purpose):
 - `[MODEL]` — REQUIRED: reviewer model per SKILL.md "Model selection"
 - `[BRIEF_FILE]` — REQUIRED: the task brief file (`task-brief PLAN N` prints the
   path; same file the implementer worked from)
+- `[TOOLCHAIN]` — REQUIRED: the project's build and test commands
+  (`build-command` / `test-command` from `.claude-wyvrn-local/PROJECT.md`)
+- `[TEST_EVIDENCE]` — REQUIRED: the orchestrator's own RED and GREEN runs for
+  the task's focused test target: the target name, the decisive failing lines
+  from the RED run, and the decisive passing lines from the GREEN run, quoted.
+  The implementer's report carries no test output, so this block is the
+  review's only test evidence.
 - `[BINDING_CONSTRAINTS]` — the binding requirements copied verbatim from the
   plan header (exact build/test commands from Tech Stack, invariants from
   Architecture) and the spec: exact values, formats, and stated relationships
