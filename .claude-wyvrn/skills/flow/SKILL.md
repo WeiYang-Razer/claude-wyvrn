@@ -55,8 +55,8 @@ AskUserQuestion: header `Gitflow`, options `[Follow gitflow, Skip gitflow]`.
 ### Follow gitflow
 
 1. Run `git branch --show-current` and `git status --short` in parallel.
-2. Infer task type: `feature` (new behavior) / `fix` (bug) / `refactor` (structural, no behavior change).
-3. Determine target branch per `gitflow.md` (e.g., `feature/<INITIALS>_<camelCase>` from `develop`; `refacto/` for refactors).
+2. Infer task type: `feature` (new behavior) / `fix` (bug, no tracking ticket) / `bugfix` (bug with a Bug ticket) / `hotfix` (urgent production fix, cut from `master`) / `refactor` (structural, no behavior change).
+3. Determine target branch per `gitflow.md` (e.g., `feature/<INITIALS>_<camelCase>` from `develop`; `refactor/` for refactors; `hotfix/` cut from `master`).
 4. If current branch matches the expected pattern → emit `Branch already appropriate: <branch>`. Continue.
 5. Else propose a name. AskUserQuestion header `Branch` with the proposal as one option; "Other" carries an edited name. Confirm uncommitted-change handling before switching. Create with `git switch -c <branch>` from the gitflow base.
 6. Set `gitflow=true`.

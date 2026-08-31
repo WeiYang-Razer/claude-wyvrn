@@ -7,6 +7,7 @@ Branching, commit, and merge protocol. Read by `/flow` at Step 1 alongside `univ
 - `master` is the release branch. Production-ready code only. Direct commits prohibited.
 - `develop` is the integration branch. All work targets `develop` via pull request.
 - `master` advances only by merging `develop` (or a release branch cut from `develop`) when the user declares a release.
+- Exception: `hotfix/` branches are cut from `master` for urgent production repair and reach `master` via PR (§4). After merge, back-merge `master` into `develop` and tag a patch release (§5).
 
 ## 2. Branch types and naming
 
@@ -15,18 +16,26 @@ Branch name pattern: `<type>/<DEVINITIALS>_<branchNameCamelCase>`.
 | Type | Prefix | Used for |
 |---|---|---|
 | Feature | `feature/` | New behavior |
-| Fix | `fix/` | Bug repair |
-| Refactor | `refacto/` | Structural change, no behavior change |
+| Fix | `fix/` | Bug repair, no tracking ticket |
+| Bugfix | `bugfix/` | Bug repair driven by a Bug ticket |
+| Hotfix | `hotfix/` | Urgent production fix, cut from `master` (§1) |
+| Refactor | `refactor/` | Structural change, no behavior change |
 | Chore | `chore/` | Housekeeping (tooling, deps, docs, CI) |
 
 `<DEVINITIALS>`: developer's uppercase initials (2 or 3 characters).
 `<branchNameCamelCase>`: short, behavior-describing camelCase phrase. Lowercase first letter. No separators.
 
+Ticket-driven branches (e.g. `/ship-ticket`) use `<type>/<TICKET-ID>[-<kebab-slug>]` instead: the
+ticket ID replaces the initials and the optional slug is lowercase kebab-case
+(`bugfix/CHROMA2-91-render-thread`). Everything else in this section applies unchanged.
+
 ### 2.1 Examples
 
 - `feature/TR_newConversionMethod`
 - `fix/AL_keyframeArrayOverflow`
-- `refacto/TR_extractPaymentService`
+- `refactor/TR_extractPaymentService`
+- `bugfix/CHROMA2-91-render-thread` (ticket-driven)
+- `hotfix/TR_paymentGatewayTimeout`
 - `chore/TR_bumpEslintToV9`
 
 ### 2.2 Prohibited
@@ -55,7 +64,8 @@ config/auth.yaml under the new providers.saml block.
 
 ## 4. Pull requests and merges
 
-- Every branch except `develop` and `master` reaches `develop` via PR. No direct pushes to `develop` or `master`.
+- Every branch except `develop`, `master`, and `hotfix/` branches reaches `develop` via PR. No direct pushes to `develop` or `master`.
+- `hotfix/` branches PR into `master`. After merge, back-merge `master` into `develop` immediately so the fix is not lost at the next release.
 - PR title matches the branch name's intent.
 - Squash-merge is the default. The squash commit follows §3.
 - Rebase-merge only when the branch contains semantically meaningful intermediate commits the user wants preserved.
@@ -65,6 +75,7 @@ config/auth.yaml under the new providers.saml block.
 ## 5. Tags and releases
 
 - Releases are tagged on `master` after the `develop` → `master` merge.
+- Hotfix merges to `master` are tagged the same way, bumping `<PATCH>`.
 - Tag format: `v<MAJOR>.<MINOR>.<PATCH>` per semver. Pre-releases: `v<MAJOR>.<MINOR>.<PATCH>-<label>.<n>`.
 - Annotated tags only. Lightweight tags prohibited.
 

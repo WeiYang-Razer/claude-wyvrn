@@ -1,14 +1,14 @@
 {
-  "_comment": "Wyvrn harness hook template. Merge the `hooks` key into your own ~/.claude/settings.json - do not replace the file, it also holds your permissions, plugins, and model. PreToolUse: refuses any Bash call while a build or test process is alive, so two toolchain invocations can never overlap. Concurrent ctest/cmake runs have hard-crashed developer machines. PostToolUse: runs clang-format on edited C++ sources only. Requires clang-format on PATH; if it is absent the hook fails loudly on every C++ edit, so install it or drop the PostToolUse block.",
-  "_caveat_pretooluse": "This blocks EVERY Bash call while ctest/cmake/hostharness is running, not just build commands - including the command that would kill a stale orphan. If you get stuck, sweep from PowerShell instead: Get-Process hostharness,ctest,cmake | Stop-Process -Force",
+  "_comment": "Wyvrn harness hook template. Merge the `hooks` key into your own ~/.claude/settings.json - do not replace the file, it also holds your permissions, plugins, and model. PreToolUse: refuses any Bash or PowerShell tool call while a process named in <project>/.claude-wyvrn-local/build-lock-processes is alive (plain text, one process name per line, e.g. cmake/ninja/ctest for a C++ project), so two toolchain invocations can never overlap; a project without the file is never blocked. Concurrent build/test runs have hard-crashed developer machines. PostToolUse: runs clang-format on edited C++ sources only. Requires clang-format on PATH; if it is absent the hook fails loudly on every C++ edit, so install it or drop the PostToolUse block.",
+  "_caveat_pretooluse": "This blocks EVERY Bash and PowerShell tool call while a listed process is running, not just build commands - including the in-session command that would kill a stale orphan. If you get stuck, sweep from a terminal outside Claude Code: Get-Process <listed names> | Stop-Process -Force",
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash",
+        "matcher": "Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
-            "command": "powershell -NoProfile -Command \"$c = @(Get-Process ctest,cmake,hostharness -ErrorAction SilentlyContinue); if ($c.Count -gt 0) { Write-Error 'BLOCKED: build/test process already running. Kill it or wait.'; exit 2 }\""
+            "command": "powershell -NoProfile -Command \"$d = $env:CLAUDE_PROJECT_DIR; if (-not $d) { $d = (Get-Location).Path }; $f = Join-Path $d '.claude-wyvrn-local/build-lock-processes'; if (Test-Path $f) { $n = @(Get-Content $f | Where-Object { $_.Trim() }); if ($n.Count -gt 0) { $c = @(Get-Process -Name $n -ErrorAction SilentlyContinue); if ($c.Count -gt 0) { Write-Error 'BLOCKED: build/test process already running. Kill it or wait.'; exit 2 } } }\""
           }
         ]
       }

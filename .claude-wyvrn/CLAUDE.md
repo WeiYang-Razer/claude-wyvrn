@@ -33,6 +33,10 @@ Issue independent reads, edits, greps, and bash commands as a single tool-use me
 `.claude-wyvrn-local/PROJECT.md` may declare:
 
 - `plan-review: on | off` — default `off`. When `on`, /flow Step 5 pauses for plan approval.
+- `build-command: <cmd>` / `test-command: <cmd>` — the project's toolchain; `<cfg>` marks the config slot. Required by `/wyvrn-verify` and the subagent-dev Build Lock.
+- `build-configs: <list>` — configs verified separately (e.g. `Debug, Release`).
+
+`.claude-wyvrn-local/build-lock-processes` — plain text, one process name per line; read by the build-lock hook and every stale-process sweep. No file, no lock.
 
 ## Artifacts
 
@@ -52,11 +56,13 @@ Binds every response, including read-only ones outside /flow. Never rewrite git 
 
 ## Build lock hook
 
-The harness assumes a `PreToolUse` hook that refuses a Bash call while a build or test process is
-alive. If `~/.claude/settings.json` has no `hooks.PreToolUse` entry, tell the user once that the
-build lock is unenforced and offer to merge `~/.claude-wyvrn/templates/settings.hooks.json` into
-their global settings. Offer; never install it silently, and never overwrite the file (it also holds
-their permissions, plugins, and model).
+The harness assumes a `PreToolUse` hook that refuses a Bash or PowerShell tool call while any
+process named in `.claude-wyvrn-local/build-lock-processes` is alive (plain text, one process name
+per line, declared per project; a project without the file is never blocked). If
+`~/.claude/settings.json` has no `hooks.PreToolUse` entry, tell the user once that the build lock is
+unenforced and offer to merge `~/.claude-wyvrn/templates/settings.hooks.json` into their global
+settings. Offer; never install it silently, and never overwrite the file (it also holds their
+permissions, plugins, and model).
 
 ## Preflight
 

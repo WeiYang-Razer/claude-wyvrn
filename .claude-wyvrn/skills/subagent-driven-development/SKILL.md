@@ -11,7 +11,7 @@ Execute a plan by dispatching a fresh implementer subagent per task, a task revi
 
 **Core principle.** Fresh subagent per task + task review (spec + quality) + broad final review = high quality, fast iteration.
 
-**The orchestrator owns the toolchain.** Implementers write code and tests; they never invoke `cmake`, `ninja`, or `ctest`. Every build and every test run is issued by the orchestrator, one config at a time, serially, under the *Build Lock* below. Concurrent toolchain invocations have hard-crashed this machine, and a subagent is exactly the place where a second one appears unnoticed. This costs the loop a round trip per task; the trade is deliberate and not negotiable on speed grounds.
+**The orchestrator owns the toolchain.** Implementers write code and tests; they never invoke the project's build or test commands. Every build and every test run is issued by the orchestrator, one config at a time, serially, under the *Build Lock* below. Concurrent toolchain invocations have hard-crashed development machines, and a subagent is exactly the place where a second one appears unnoticed. This costs the loop a round trip per task; the trade is deliberate and not negotiable on speed grounds.
 
 **Narration.** Between tool calls, narrate at most one short line — the ledger and the tool results carry the record.
 
@@ -39,10 +39,10 @@ What `/subagent-dev` buys you over inline `/flow`:
 
 Per task, run this cycle:
 
-1. **Dispatch** a fresh implementer subagent (`implementer-prompt.md`) with the task-brief file path, the report file path, and scene-setting context.
+1. **Dispatch** a fresh implementer subagent (`implementer-prompt.md`) with the task-brief file path, the report file path, scene-setting context, and the task's phase block — RED first, then a second GREEN dispatch after the orchestrator confirms the failure (*Execution mode: TDD*).
 2. **Answer questions** if the implementer asks any before starting — provide context and let it proceed.
-3. The implementer **implements (TDD), tests, commits, self-reviews, writes its report file**, and returns a status.
-4. **Handle the status** (see Handling implementer status). On DONE, generate the review package and dispatch the task reviewer (`task-reviewer-prompt.md`).
+3. The implementer **works its phase without running anything, commits, self-reviews, writes its report file**, and returns a status; the orchestrator runs the focused test target between and after the phases (*Build Lock*).
+4. **Handle the status** (see Handling implementer status). On RED-PENDING, confirm the failure and dispatch the GREEN phase. On DONE, confirm green, then generate the review package and dispatch the task reviewer (`task-reviewer-prompt.md`).
 5. **Fix loop:** if the reviewer reports Critical/Important findings, dispatch a fix subagent, then re-review. Log Minor findings to the ledger for the final review.
 6. When the reviewer reports spec ✅ and quality approved, **mark the task complete**: append it to the progress ledger AND flip every one of the task's `- [ ]` steps to `- [x]` in the plan file. Then move to the next task.
 
@@ -67,30 +67,34 @@ If `~/.claude-wyvrn/VERSION` missing → halt: `Wyvrn harness not installed. Run
 TDD is preserved, but the red-green cycle is **orchestrator-driven** because implementers may not
 invoke the toolchain (see *Build Lock*). The cycle splits across the boundary:
 
-1. Implementer writes the failing test and reports `RED-PENDING`, naming the exact test target. It
-   commits the test alone. It does not run it.
+1. A RED-phase implementer dispatch writes the failing test and reports `RED-PENDING`, naming the
+   exact test target. It commits the test alone. It does not run it.
 2. **Orchestrator runs the focused test target** and confirms it fails for the right reason. A test
    that passes here is a defect: the test does not exercise the new behavior. Send it back.
-3. Implementer writes the minimal implementation and commits. It does not run it.
+3. A fresh GREEN-phase implementer dispatch — carrying the RED commit, the focused target, and your
+   observed RED output, because it has no memory of the first dispatch — writes the minimal
+   implementation and commits. It does not run it.
 4. **Orchestrator re-runs the same focused target** and confirms green.
 5. Only then does the task proceed to review.
 
 The plan carries the complete code, so the implementer transcribes rather than re-derives. State the
-`RED-PENDING` contract and the no-toolchain rule in every dispatch prompt. Steps 2 and 4 use the
-focused target named by the implementer, never the full suite — the full suite runs once, at the
-final gate.
+`RED-PENDING` contract and the no-toolchain rule in every dispatch prompt, and fill the template's
+`[PHASE_BLOCK]` with the matching phase block from `implementer-prompt.md` (see *Dispatch*). Steps 2
+and 4 use the focused target named by the implementer, never the full suite — the full suite runs
+once, at the final gate.
 
 ## Build Lock
 
 A single, non-negotiable rule: **only the orchestrator touches the toolchain.**
 
-These rules exist because concurrent `ctest` / build invocations have hard-crashed this development
-machine. They are a machine-stability constraint, not a performance preference, and they override
-every speed argument in this file.
+These rules exist because concurrent build/test invocations have hard-crashed development machines.
+They are a machine-stability constraint, not a performance preference, and they override every speed
+argument in this file.
 
-**Subagents — implementers, fix subagents, and reviewers alike — must NEVER invoke `cmake`, `ninja`,
-or `ctest`,** directly or through a wrapper (`wyvrnpm build`, `wyvrnpm test`, a build script, an IDE
-task, a `Makefile` target that shells out to any of them). This holds even when the subagent is the
+**Subagents — implementers, fix subagents, and reviewers alike — must NEVER invoke the project's
+build or test toolchain** — the `build-command` / `test-command` declared in
+`.claude-wyvrn-local/PROJECT.md` — directly or through a wrapper (a build script, an IDE task, a
+`Makefile` target that shells out to them). This holds even when the subagent is the
 only one running, and even when the command is obviously safe. The rule is absolute because a
 conditional rule is one the next dispatch forgets.
 
@@ -102,13 +106,16 @@ concurrency in general.
 
 - One invocation in flight at a time. Never two builds, never two test runs, never a build and a
   test together.
-- One config per invocation. `--all-configs` and comma-separated `--config Debug,Release` are
-  prohibited — they fan out internally.
-- Debug and Release are separate, sequential invocations. Wait for each to exit before the next.
-- **Sweep stale processes before the first invocation of a run:**
+- One config per invocation. Combined-config convenience flags (e.g. `--all-configs`, a
+  comma-separated config list) are prohibited — they fan out internally.
+- Each config in the project's `build-configs` is a separate, sequential invocation. Wait for each
+  to exit before the next.
+- **Sweep stale processes before the first invocation of a run** — the names come from
+  `.claude-wyvrn-local/build-lock-processes` (one per line):
 
   ```powershell
-  Get-Process hostharness,ctest,cmake -ErrorAction SilentlyContinue | Stop-Process -Force
+  $n = @(Get-Content .claude-wyvrn-local/build-lock-processes -ErrorAction SilentlyContinue | Where-Object { $_.Trim() })
+  if ($n) { Get-Process -Name $n -ErrorAction SilentlyContinue | Stop-Process -Force }
   ```
 
   A non-empty sweep means a prior run did not exit cleanly — say so, and do not trust results that
@@ -175,7 +182,9 @@ Use the least powerful model that can handle each role, to conserve cost and inc
 
 ## Dispatch
 
-Dispatch every implementer via `implementer-prompt.md`, passing the brief **path** and the report **path** — never the brief text. Answer any clarifying question before the implementer proceeds. Record the BASE commit (the tip before dispatch) for each task; the review package and the ledger need it.
+Dispatch every implementer via `implementer-prompt.md`, passing the brief **path** and the report **path** — never the brief text. Answer any clarifying question before the implementer proceeds. Record the BASE commit (the tip before the task's first dispatch) for each task; the review package and the ledger need it.
+
+**Two implementer dispatches per task, one per phase — each a fresh subagent.** The GREEN dispatch remembers nothing from the RED one. Fill the template's `[PHASE_BLOCK]` with the matching phase block from `implementer-prompt.md`: the RED dispatch gets the RED block; the GREEN dispatch gets the GREEN block with `[RED_COMMIT]` (short SHA + subject), `[TEST_TARGET]`, and `[RED_OUTPUT]` (the decisive lines of your own RED run) filled in. Both dispatches get the same brief and report paths; the task's review package spans both phases' commits from the one recorded BASE.
 
 - **Sequential chain:** dispatch one implementer, review it (below), feed its produced interfaces forward into the next brief, dispatch the next. Use `subagent_type: general-purpose`.
 - **Never dispatch multiple implementers into the same working tree in parallel** — they conflict. Tasks run one at a time. Independent research-only units may fan out (use `Explore`), but implementers do not.
@@ -189,9 +198,11 @@ For every returned task, before accepting it:
 
 ## Handling implementer status
 
-Implementer subagents report one of four statuses. Handle each appropriately:
+Implementer subagents report one of five statuses. Handle each appropriately:
 
-**DONE:** Generate the review package (`review-package BASE HEAD` — BASE is the commit you recorded before dispatching, never `HEAD~1`, which silently drops all but the last commit of a multi-commit task), then dispatch the task reviewer with the printed path.
+**RED-PENDING:** The RED phase returned. Run the named focused test target yourself and confirm it fails for the right reason — a pass here means the test does not exercise the new behavior; send it back. On the expected failure, dispatch the GREEN-phase implementer carrying the RED commit, the target, and your observed failing output.
+
+**DONE:** The GREEN phase returned. Run the focused target and confirm green, then generate the review package (`review-package BASE HEAD` — BASE is the commit you recorded before the RED dispatch, never `HEAD~1`, which silently drops all but the last commit of a multi-commit task), and dispatch the task reviewer with the printed path.
 
 **DONE_WITH_CONCERNS:** The implementer completed the work but flagged doubts. Read the concerns first. If they touch correctness or scope, address them before review. If they are observations (e.g., "this file is getting large"), note them and proceed to review.
 
@@ -230,9 +241,9 @@ Per-task reviews are task-scoped gates. The broad review happens once, at the fi
 Everything you paste into a dispatch prompt — and everything a subagent prints back — stays resident in your context for the rest of the session and is re-read on every later turn. Hand artifacts over as files:
 
 - **Task brief:** before dispatching an implementer, run `task-brief PLAN_FILE N` — it extracts the task's full text to a uniquely named file and prints the path. Your dispatch should contain: (1) one line on where this task fits; (2) the brief path, introduced as "read this first — it is your requirements, with the exact values to use verbatim"; (3) interfaces and decisions from earlier tasks the brief cannot know; (4) your resolution of any ambiguity you noticed in the brief; (5) the report-file path and report contract. Exact values (numbers, magic strings, signatures, test cases) appear only in the brief.
-- **Report file:** name the implementer's report after the brief (`…/task-N-brief.md` → `…/task-N-report.md`) and put it in the dispatch prompt. The implementer writes the full report there and returns only status, commits, a one-line test summary, and concerns.
+- **Report file:** name the implementer's report after the brief (`…/task-N-brief.md` → `…/task-N-report.md`) and put it in the dispatch prompt. The implementer writes the full report there and returns only status, commits, the focused test target (never test results), and concerns.
 - **Reviewer inputs:** the task reviewer gets three paths — the same brief file, the report file, and the review package — plus the binding constraints that bind the task.
-- Fix dispatches append their fix report (with test results) to the same report file and return a short summary; re-reviews read the updated file.
+- Fix dispatches append their fix report — naming the covering test target, never test output — to the same report file and return a short summary; the orchestrator runs that target, and re-reviews read the updated file.
 
 ## Durable progress
 
@@ -265,22 +276,24 @@ You: I'm using /subagent-dev to execute this plan.
 [Pre-flight scan: clean. Create todos + ledger for all tasks.]
 
 Task 1: Hook installation script
-[task-brief PLAN 1 → path; dispatch implementer with brief + report paths + context]
+[task-brief PLAN 1 → path; dispatch RED-phase implementer with brief + report paths + context]
 Implementer: "Before I begin — user or system level for the hook?"
 You: "User level (~/.config/…)."
-Implementer: DONE — install-hook implemented, RED then GREEN, 5/5 tests passing, self-review added --force, committed.
-[review-package BASE HEAD → path; dispatch task reviewer]
+Implementer: RED-PENDING — failing test committed, target: install-hook suite.
+[Run the target: fails as expected. Dispatch GREEN-phase implementer with RED commit + output]
+Implementer: DONE — install-hook implemented, self-review added --force, committed.
+[Run the target: green. review-package BASE HEAD → path; dispatch task reviewer with RED/GREEN output]
 Task reviewer: Spec ✅ — all requirements met, nothing extra. Issues: none. Approved.
 [Append "Task 1: complete (…, review clean)" to the ledger; flip Task 1's steps to [x] in the plan file]
 
 Task 2: Recovery modes
-[task-brief PLAN 2 → path; dispatch implementer]
-Implementer: DONE — verify/repair modes, 8/8 passing, committed.
-[review-package → path; dispatch task reviewer]
+[task-brief PLAN 2 → path; RED-phase dispatch → RED-PENDING; run target: red. GREEN-phase dispatch]
+Implementer: DONE — verify/repair modes, committed.
+[Run target: green. review-package → path; dispatch task reviewer]
 Task reviewer: Spec ❌ — Missing progress reporting; Extra --json flag. Important: magic number 100.
 [Dispatch ONE fix subagent with all findings]
-Fixer: removed --json, added progress reporting, extracted PROGRESS_INTERVAL. Tests re-run, passing.
-[Re-review] Task reviewer: Spec ✅. Approved.
+Fixer: removed --json, added progress reporting, extracted PROGRESS_INTERVAL. Covering target: recovery suite.
+[Run covering target: green. Re-review] Task reviewer: Spec ✅. Approved.
 [Append "Task 2: complete" to the ledger; flip Task 2's steps to [x] in the plan file]
 
 ...
@@ -303,9 +316,9 @@ Final reviewer: All requirements met, ready to merge.
 - Accept "close enough" on spec compliance (reviewer found spec issues = not done).
 - Skip review loops (reviewer found issues = implementer fixes = review again).
 - Let implementer self-review replace actual review (both are needed).
-- Let a subagent invoke `cmake`, `ninja`, `ctest`, or any wrapper around them (`wyvrnpm build`/`test`, build scripts). The orchestrator runs every build and test (*Build Lock*).
-- Run two toolchain invocations concurrently, combine configs in one command (`--all-configs`, `--config Debug,Release`), or background a build or test run.
-- Start a suite without sweeping stale `hostharness`/`ctest`/`cmake` processes and confirming the working directory.
+- Let a subagent invoke the project's build or test toolchain or any wrapper around it (build scripts, IDE tasks). The orchestrator runs every build and test (*Build Lock*).
+- Run two toolchain invocations concurrently, combine configs in one command (e.g. `--all-configs`), or background a build or test run.
+- Start a suite without sweeping the stale processes named in `.claude-wyvrn-local/build-lock-processes` and confirming the working directory.
 - Accept a task report containing test output the orchestrator did not produce — that is a lock violation; treat the task as unverified.
 - Tell a reviewer what not to flag, or pre-rate a finding's severity in the dispatch prompt.
 - Dispatch a task reviewer without a diff file — generate it first (`review-package BASE HEAD`) and name the printed path.
@@ -328,7 +341,7 @@ Final reviewer: All requirements met, ready to merge.
 ## Constraints
 
 - Never accept a subagent's work without a task-reviewer subagent gating the diff, and never accept it without the orchestrator's own RED/GREEN output for that task's focused target.
-- Subagents never invoke `cmake`, `ninja`, or `ctest`, or any wrapper around them. The orchestrator issues every build and test, one config at a time, serially, after sweeping stale processes (*Build Lock*). Read/Edit/Grep parallelism is unaffected.
+- Subagents never invoke the project's build or test toolchain, or any wrapper around it. The orchestrator issues every build and test, one config at a time, serially, after sweeping stale processes (*Build Lock*). Read/Edit/Grep parallelism is unaffected.
 - Briefs must be fully self-contained — subagents cannot see this conversation.
 - Hand off briefs, reports, and review packages as **file paths**, never inline text; every task passes through a task-reviewer subagent before it is accepted.
 - Do not dispatch implementers in parallel — tasks run sequentially in one working tree.

@@ -1,6 +1,6 @@
 ---
 name: ship-ticket
-description: End-to-end orchestrator from a Jira ticket ID to a pushed, reviewed feature branch. Fans out parallel research, brainstorms a spec with house-style Doxygen API surface, writes a TDD plan, executes it task-by-task with implementer and reviewer subagents, runs a whole-branch integration review, verifies Debug and Release separately, then lands commits, branch, session report, and follow-up Jira tickets. All builds and tests go through a serialized broker. Use when the user says "ship CHROMA2-107", "take this ticket end to end", or invokes /ship-ticket <TICKET-ID>.
+description: End-to-end orchestrator from a Jira ticket ID to a pushed, reviewed feature branch. Fans out parallel research, brainstorms a spec with a house-style doc-commented API surface, writes a TDD plan, executes it task-by-task with implementer and reviewer subagents, runs a whole-branch integration review, verifies every declared build config separately, then lands commits, branch, session report, and follow-up Jira tickets. All builds and tests go through a serialized broker. Use when the user says "ship CHROMA2-107", "take this ticket end to end", or invokes /ship-ticket <TICKET-ID>.
 ---
 
 # ship-ticket
@@ -22,18 +22,19 @@ the checkpoints, and the rules that bind across stages.
 | 3 | Plan | `/write-plan` | none |
 | 4 | Execute | `/subagent-dev` | per-task review |
 | 5 | Whole-branch review | reviewer subagent | loops until clean |
-| 6 | Verify | `/wyvrn-verify` | Debug + Release must pass |
+| 6 | Verify | `/wyvrn-verify` | every declared config must pass |
 | 7 | Land | this file | **push requires explicit ask** |
 
 ## Hard rules
 
 These bind every stage and override any stage-local convenience.
 
-1. **The build broker is the orchestrator.** Only this agent invokes `cmake`, `ninja`, or `ctest`,
-   or any wrapper around them (`wyvrnpm build`, `wyvrnpm test`, build scripts, IDE tasks). No
-   subagent ever does, at any stage, for any reason. One invocation in flight at a time, one config
-   per invocation, sequential, after sweeping stale processes. Concurrent runs have hard-crashed this
-   machine. Full rule: `subagent-dev` *Build Lock* and `cpp.md` *Test and build execution*.
+1. **The build broker is the orchestrator.** Only this agent invokes the project's build or test
+   toolchain - the `build-command` / `test-command` declared in `.claude-wyvrn-local/PROJECT.md` -
+   or any wrapper around it (build scripts, IDE tasks). No subagent ever does, at any stage, for
+   any reason. One invocation in flight at a time, one config per invocation, sequential, after
+   sweeping the stale processes named in `.claude-wyvrn-local/build-lock-processes`. Concurrent
+   runs have hard-crashed development machines. Full rule: `subagent-dev` *Build Lock*.
    Subagents may still Read, Grep, Glob, and Edit in parallel freely - the lock is on the toolchain,
    not on concurrency.
 2. **Never rewrite git history or change file tracking without asking in the current turn.** No
@@ -56,21 +57,19 @@ These bind every stage and override any stage-local convenience.
 
 1. Read the ticket via `getJiraIssue`. Read every linked issue and every issue the description
    references by key.
-2. Resolve the target repo. The CHROMA2 project spans three bare repos, and a ticket rarely names
-   which one it lands in - Stage 1 Agent B exists partly to answer this:
+2. Resolve the target repo from the **repo map** in `.claude-wyvrn-local/PROJECT.md` - a table
+   listing each repo the project spans, its path, and what it holds. A ticket rarely names which
+   repo it lands in; Stage 1 Agent B exists partly to answer this. If PROJECT.md has no repo map,
+   the project is single-repo: use the current one. A multi-repo project without a map halts here -
+   ask the user to add one rather than guessing.
 
-   | Repo | Path | Holds |
-   |---|---|---|
-   | host | `C:/Proj/chroma.git` | `Plugins/Chroma2/`, sink registration, `FrameSinkPump` |
-   | chroma2 | `C:/Proj/chroma2.git` | renderer, world/scene, identity |
-   | backend | `C:/Proj/chroma2backend.git` | persistence, config, service |
-
-3. **Worktree, not a branch checkout.** These are bare repos with one worktree per ticket, laid out
-   as `<repo>.git/<branch-type>/<TICKET-ID>[-slug]/` (e.g.
-   `chroma2.git/bugfix/CHROMA2-91-render-thread`, `chroma.git/chore/CHROMA2-103-...`). Branch type
-   comes from the ticket's issue type: Bug -> `bugfix/`, Task/Chore -> `chore/`, Story -> `feature/`.
-   Propose the worktree path and let `/worktree` create it. Do not create it without a yes, and never
-   work directly in an existing ticket's worktree.
+3. **Checkout per the project's declared layout.** If PROJECT.md declares a worktree layout (e.g.
+   bare repos with one worktree per ticket at `<repo>.git/<branch-type>/<TICKET-ID>[-slug]/`),
+   propose the worktree path and let `/worktree` create it - never work directly in an existing
+   ticket's worktree. Otherwise create a ticket-driven branch per `gitflow.md` section 2
+   (`<type>/<TICKET-ID>[-<kebab-slug>]`). Branch type comes from the ticket's issue type:
+   Bug -> `bugfix/`, Task/Chore -> `chore/`, Story -> `feature/`. Do not create anything without
+   a yes.
 4. Verify the build-lock hook is installed (`~/.claude/settings.json`, `hooks.PreToolUse`). If it is
    absent, say so once and offer to add it from `~/.claude-wyvrn/templates/settings.hooks.json`.
    Do not install it silently.
@@ -85,8 +84,8 @@ none may invoke the toolchain (rule 1).
 - **Agent A - ticket.** Reads the ticket, its linked issues, its comments, and any Confluence page it
   references. Returns: the actual defect in one paragraph, the acceptance criteria, the open
   questions the ticket itself raises, and anything the ticket asserts but does not evidence.
-- **Agent B - subsystems.** Greps all three repos (`chroma.git`, `chroma2.git`,
-  `chroma2backend.git`) for the affected subsystems and prior art. Search the `main`/`master`
+- **Agent B - subsystems.** Greps every repo in the project's repo map for the affected subsystems
+  and prior art. Search the `main`/`master`
   worktree of each, not a sibling ticket's worktree - those carry unmerged work and will produce
   findings that do not exist on the integration branch. Returns a `file:line` table of the relevant
   call sites, the owning module and repo, and any previous attempt at the same problem (a reverted
@@ -107,11 +106,11 @@ Run `/brainstorm` against the findings document. The spec must contain:
 
 - The problem, restated from evidence rather than from the ticket's wording.
 - The chosen approach and the rejected alternatives, each with the reason it lost.
-- **The public API surface, with house-style Doxygen comments already written.** Not a sketch, not a
-  signature list - the actual declarations with `/** @brief ... */` blocks carrying `@param`,
-  `@return`, `@throws` where applicable, and the thread-safety `@note`, exactly as `cpp.md`
-  *Documentation comments* specifies. Do not defer this to implementation and do not emit a bare
-  signature list expecting a later conversion pass.
+- **The public API surface, with house-style doc comments already written** per the matching stack
+  convention (for C++, `cpp.md` *Documentation comments*: `/** @brief ... */` blocks carrying
+  `@param`, `@return`, `@throws` where applicable, and the thread-safety `@note`). Not a sketch,
+  not a signature list - the actual declarations. Do not defer this to implementation and do not
+  emit a bare signature list expecting a later conversion pass.
 - Which repo the change lands in, and why.
 - What is explicitly out of scope, for Stage 7's descope tickets.
 
@@ -150,7 +149,7 @@ unverified and re-run it yourself.
 
 ## Stage 5: Whole-branch review
 
-After every task, dispatch **one** reviewer subagent over the full branch diff
+After the last task completes, dispatch **one** reviewer subagent over the full branch diff
 (`review-package "$(bash ~/.claude-wyvrn/skills/subagent-driven-development/scripts/branch-base)" HEAD`).
 
 This pass exists to catch what per-task reviews structurally cannot: **cross-task integration
@@ -165,11 +164,12 @@ clean. Do not proceed to Stage 6 with open Critical or Important findings.
 
 ## Stage 6: Verify
 
-Run `/wyvrn-verify`. Debug and Release, separate sequential invocations, full suite, after a stale
-process sweep, with exact pass/fail counts quoted from the runner's own output.
+Run `/wyvrn-verify`. Every config in the project's `build-configs`, separate sequential invocations,
+full suite, after a stale process sweep, with exact pass/fail counts quoted from the runner's own
+output.
 
-A green Debug run alone does not pass this gate. If anything is still in flight at report time, say
-so and mark the result provisional.
+A green run of one config alone does not pass this gate. If anything is still in flight at report
+time, say so and mark the result provisional.
 
 ## Stage 7: Land
 
@@ -189,14 +189,14 @@ so and mark the result provisional.
 
 ## Prohibitions
 
-- Never let a subagent invoke `cmake`, `ninja`, `ctest`, or any wrapper around them.
+- Never let a subagent invoke the project's build or test toolchain, or any wrapper around it.
 - Never run two toolchain invocations concurrently, combine configs, or background a build or test.
 - Never rewrite history or change file tracking without in-turn approval.
 - Never push the branch or the report without an explicit, disambiguated ask.
 - Never proceed past Stage 2 without `approve`.
 - Never guess what `refine` meant when no text accompanied it.
 - Never write the plan before the spec is approved, or code before the plan exists.
-- Never emit a spec whose API surface lacks the Doxygen blocks.
+- Never emit a spec whose API surface lacks the doc-comment blocks.
 - Never file a Jira ticket without asking.
 - Never skip Stage 5 because the per-task reviews were clean - that is the stage's whole premise.
 - Do not modify `~/.claude-wyvrn/`.
@@ -205,6 +205,10 @@ so and mark the result provisional.
 
 - `/worktree` - Stage 0. `/brainstorm` - Stage 2. `/write-plan` - Stage 3. `/subagent-dev` - Stages 4-5.
   `/wyvrn-verify` - Stage 6. `/push-report` and `/wyvrn-commit` - Stage 7.
-- `gitflow.md` sections 3, 4, 7 - commit format, PR flow, and the history/tracking gate.
-- `cpp.md` *Documentation comments*, *Test and build execution*, *Platform guards*.
+- `gitflow.md` sections 2, 3, 4, 7 - ticket-driven branch naming, commit format, PR flow, and the
+  history/tracking gate.
+- `.claude-wyvrn-local/PROJECT.md` - repo map, worktree layout, `build-command` / `test-command` /
+  `build-configs`. `.claude-wyvrn-local/build-lock-processes` - the sweep list.
+- The matching stack convention (e.g. `cpp.md` *Documentation comments*, *Test and build execution*,
+  *Platform guards*) - authoritative for the spec's doc comments and stack-specific build rules.
 - `universal.md` section 3 - adversarial honesty, binding on the spec and both reviews.

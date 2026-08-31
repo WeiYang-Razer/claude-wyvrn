@@ -48,19 +48,19 @@ Subagent (general-purpose):
     Once you're clear on requirements:
     1. Implement exactly what the task specifies
     2. Follow TDD (/test-driven-development), but DO NOT RUN ANYTHING. You may
-       never invoke `cmake`, `ninja`, or `ctest`, or any wrapper around them
-       (`wyvrnpm build`, `wyvrnpm test`, build scripts, IDE tasks). The
-       orchestrator owns the toolchain and runs every build and test serially;
-       concurrent invocations have crashed this machine. Instead:
-       a. Write the failing test. Commit it alone. Report status RED-PENDING and
-          name the exact focused test target the orchestrator should run.
-       b. Wait. The orchestrator runs it, confirms it fails for the right reason,
-          and dispatches you again to implement.
-       c. Write the minimal code to make it pass. Commit. The orchestrator
-          confirms GREEN.
-       The brief carries the complete code — transcribe it rather than re-derive,
-       adapting only where the actual codebase differs from the brief's
-       assumptions and recording every deviation in your report.
+       never invoke the project's build or test toolchain — [TOOLCHAIN] — or
+       any wrapper around it (build scripts, IDE tasks). The orchestrator owns
+       the toolchain and runs every build and test serially; concurrent
+       invocations have hard-crashed development machines. The red-green cycle
+       is split across two dispatches, each a fresh subagent with no memory of
+       the other. This dispatch covers exactly one phase:
+
+       [PHASE_BLOCK - paste exactly one of the two phase blocks defined
+       below this template]
+
+       The brief carries the complete code - transcribe it rather than
+       re-derive, adapting only where the actual codebase differs from the
+       brief's assumptions and recording every deviation in your report.
     3. Reason about correctness by reading the code — you cannot execute it
     4. Commit your work [only if the brief's steps say to]. Use a single `-m`
        message. Do NOT append a `Co-Authored-By` trailer, a "Generated with"
@@ -136,8 +136,8 @@ Subagent (general-purpose):
     - Do tests actually verify behavior (not just mock behavior)?
     - Did I write the test before the implementation, and record any deviation
       from the brief's code?
-    - Did I avoid invoking the toolchain entirely (no cmake/ninja/ctest, no
-      wrappers)?
+    - Did I avoid invoking the toolchain entirely (no build or test commands,
+      no wrappers)?
     - Are tests comprehensive?
     - Is the test output pristine (no stray warnings or noise)?
 
@@ -157,8 +157,8 @@ Subagent (general-purpose):
     - What the change is expected to do, and why you believe it is correct
     - **TDD Evidence:**
       - The exact focused test target(s) the orchestrator must run
-      - Why the test is expected to fail before the implementation lands, and
-        what failure message you expect
+      - RED phase only: why the test is expected to fail before the
+        implementation lands, and what failure message you expect
       - Every deviation from the brief's code with its reason
       - NO test output. You did not run anything; do not report results you did
         not observe.
@@ -178,14 +178,55 @@ Subagent (general-purpose):
     If BLOCKED or NEEDS_CONTEXT, put the specifics in the final message itself —
     the controller acts on it directly.
 
-    Use DONE_WITH_CONCERNS if you completed the work but have doubts about
-    correctness. Use BLOCKED if you cannot complete the task. Use NEEDS_CONTEXT
-    if you need information that wasn't provided. Never silently produce work
-    you're unsure about.
+    RED-PENDING is the only success status for a RED-phase dispatch. DONE is
+    the success status for a GREEN-phase dispatch. Use DONE_WITH_CONCERNS if
+    you completed the work but have doubts about correctness. Use BLOCKED if
+    you cannot complete the task. Use NEEDS_CONTEXT if you need information
+    that wasn't provided. Never silently produce work you're unsure about.
+```
+
+## Phase blocks
+
+Fill `[PHASE_BLOCK]` with exactly one of these. Each dispatch is a fresh
+subagent with no memory of the other phase, so the block must carry everything
+its phase needs.
+
+**RED phase — first dispatch of the task:**
+
+```
+You are in the RED phase. The implementation does not exist yet.
+a. Write the failing test for the task's behavior. Write no implementation
+   code, even though the brief contains it.
+b. Commit the test alone.
+c. Report status RED-PENDING. Name the exact focused test target the
+   orchestrator should run, the failure you expect (assertion or message),
+   and why that failure proves the test exercises the new behavior.
+Do not implement. A separate GREEN-phase dispatch - a fresh subagent that
+cannot see your conversation - implements after the orchestrator confirms
+the failure.
+```
+
+**GREEN phase — second dispatch, after the orchestrator confirmed RED:**
+
+```
+You are in the GREEN phase. The failing test already exists - do not write
+another test.
+- The test was committed as: [RED_COMMIT]
+- The orchestrator ran `[TEST_TARGET]` and confirmed it fails as expected:
+  [RED_OUTPUT]
+a. Read the committed test first; it is the acceptance criterion.
+b. Write the minimal implementation that makes it pass. Commit.
+c. Report status DONE (or DONE_WITH_CONCERNS), naming the same focused test
+   target for the orchestrator's GREEN run.
 ```
 
 **Placeholders:**
 - `[MODEL]` — REQUIRED: implementer model per SKILL.md "Model selection"
 - `[BRIEF_FILE]` — REQUIRED: the task brief file (`task-brief PLAN N` prints the path)
 - `[REPORT_FILE]` — REQUIRED: where the implementer writes its detailed report (`…/task-N-report.md`)
+- `[TOOLCHAIN]` — REQUIRED: the project's build and test commands (`build-command` / `test-command` from `.claude-wyvrn-local/PROJECT.md`)
+- `[PHASE_BLOCK]` — REQUIRED: one of the two phase blocks above (RED for the task's first dispatch, GREEN for the second)
+- `[RED_COMMIT]` — GREEN phase: the RED commit, short SHA + subject
+- `[TEST_TARGET]` — GREEN phase: the focused test target the orchestrator ran
+- `[RED_OUTPUT]` — GREEN phase: the decisive failing lines from the orchestrator's own RED run, quoted
 - `[directory]` — the working tree

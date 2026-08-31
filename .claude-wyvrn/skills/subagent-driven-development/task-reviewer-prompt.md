@@ -61,10 +61,10 @@ Subagent (general-purpose):
 
     ## Tests
 
-    **You may NEVER invoke `cmake`, `ninja`, or `ctest`, or any wrapper around
-    them (`wyvrnpm build`, `wyvrnpm test`, build scripts, IDE tasks).** The
-    orchestrator owns the toolchain and runs every build and test serially;
-    concurrent invocations have crashed this machine. This is absolute — it
+    **You may NEVER invoke the project's build or test toolchain — [TOOLCHAIN]
+    — or any wrapper around it (build scripts, IDE tasks).** The orchestrator
+    owns the toolchain and runs every build and test serially; concurrent
+    invocations have hard-crashed development machines. This is absolute — it
     holds even for a single focused test, and even when reading the code raises a
     specific doubt.
 
@@ -167,6 +167,8 @@ Subagent (general-purpose):
 - `[MODEL]` — REQUIRED: reviewer model per SKILL.md "Model selection"
 - `[BRIEF_FILE]` — REQUIRED: the task brief file (`task-brief PLAN N` prints the
   path; same file the implementer worked from)
+- `[TOOLCHAIN]` — REQUIRED: the project's build and test commands
+  (`build-command` / `test-command` from `.claude-wyvrn-local/PROJECT.md`)
 - `[BINDING_CONSTRAINTS]` — the binding requirements copied verbatim from the
   plan header (exact build/test commands from Tech Stack, invariants from
   Architecture) and the spec: exact values, formats, and stated relationships
