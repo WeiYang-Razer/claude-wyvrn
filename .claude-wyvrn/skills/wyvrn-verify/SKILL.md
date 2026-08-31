@@ -136,8 +136,9 @@ Still running:  <nothing | what, and why it could not be stopped>
 - `.claude-wyvrn-local/PROJECT.md` -- `build-command`, `test-command`, `build-configs`.
 - `.claude-wyvrn-local/build-lock-processes` -- the sweep list, shared with the build-lock hook
   (`~/.claude-wyvrn/templates/settings.hooks.json`).
-- Stack conventions (e.g. `cpp.md` *Test and build execution*) may add stack-specific rules;
-  this skill is the stack-agnostic runner.
+- Stack conventions (e.g. `cpp.md` *Testing*) may add stack-specific test style rules; this
+  skill is the stack-agnostic runner, and its serial-execution rules override any convenience
+  flag a stack file suggests (e.g. a `--parallel` runner default).
 - `verify-done` -- the evidence gate. This skill supplies observed output; `verify-done` maps it
   to acceptance criteria. Neither replaces the other.
 - `/flow` Step 8 -- self-verify. Use this skill for the mechanics of that step.

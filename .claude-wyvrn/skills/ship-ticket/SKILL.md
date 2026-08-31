@@ -106,8 +106,8 @@ Run `/brainstorm` against the findings document. The spec must contain:
 
 - The problem, restated from evidence rather than from the ticket's wording.
 - The chosen approach and the rejected alternatives, each with the reason it lost.
-- **The public API surface, with house-style doc comments already written** per the matching stack
-  convention (for C++, `cpp.md` *Documentation comments*: `/** @brief ... */` blocks carrying
+- **The public API surface, with house-style doc comments already written** per `universal.md`
+  §2.6 and the matching stack convention (for C++: `/** @brief ... */` blocks carrying
   `@param`, `@return`, `@throws` where applicable, and the thread-safety `@note`). Not a sketch,
   not a signature list - the actual declarations. Do not defer this to implementation and do not
   emit a bare signature list expecting a later conversion pass.
@@ -209,6 +209,7 @@ time, say so and mark the result provisional.
   history/tracking gate.
 - `.claude-wyvrn-local/PROJECT.md` - repo map, worktree layout, `build-command` / `test-command` /
   `build-configs`. `.claude-wyvrn-local/build-lock-processes` - the sweep list.
-- The matching stack convention (e.g. `cpp.md` *Documentation comments*, *Test and build execution*,
-  *Platform guards*) - authoritative for the spec's doc comments and stack-specific build rules.
+- The matching stack convention (e.g. `cpp.md` *Testing*) and `universal.md` §2.6 - authoritative
+  for the spec's doc comments and test style. How builds and tests are run is governed by rule 1
+  and the PROJECT.md declarations, which override any convenience flag a stack file suggests.
 - `universal.md` section 3 - adversarial honesty, binding on the spec and both reviews.
