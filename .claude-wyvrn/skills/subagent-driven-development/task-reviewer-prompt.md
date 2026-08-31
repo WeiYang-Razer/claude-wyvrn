@@ -68,11 +68,15 @@ Subagent (general-purpose):
     holds even for a single focused test, and even when reading the code raises a
     specific doubt.
 
-    The RED and GREEN evidence attached to this review is the orchestrator's own
-    output for exactly this code. Judge the tests by reading them and that output.
-    If you believe further validation is warranted — a race detector run, a
-    high-count loop, a wider suite — name the exact command in your report and
-    recommend it. Do not run it.
+    The orchestrator's own RED and GREEN output for this task's focused test
+    target — the only test evidence in this review:
+
+    [TEST_EVIDENCE]
+
+    Judge the tests by reading them and that output. If you believe further
+    validation is warranted — a race detector run, a high-count loop, a wider
+    suite — name the exact command in your report and recommend it. Do not run
+    it.
 
     Warnings or other noise in the orchestrator's reported test output are
     findings — test output should be pristine.
@@ -169,6 +173,11 @@ Subagent (general-purpose):
   path; same file the implementer worked from)
 - `[TOOLCHAIN]` — REQUIRED: the project's build and test commands
   (`build-command` / `test-command` from `.claude-wyvrn-local/PROJECT.md`)
+- `[TEST_EVIDENCE]` — REQUIRED: the orchestrator's own RED and GREEN runs for
+  the task's focused test target: the target name, the decisive failing lines
+  from the RED run, and the decisive passing lines from the GREEN run, quoted.
+  The implementer's report carries no test output, so this block is the
+  review's only test evidence.
 - `[BINDING_CONSTRAINTS]` — the binding requirements copied verbatim from the
   plan header (exact build/test commands from Tech Stack, invariants from
   Architecture) and the spec: exact values, formats, and stated relationships

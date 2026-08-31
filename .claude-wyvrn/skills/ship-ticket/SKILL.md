@@ -1,6 +1,6 @@
 ---
 name: ship-ticket
-description: End-to-end orchestrator from a Jira ticket ID to a pushed, reviewed feature branch. Fans out parallel research, brainstorms a spec with a house-style doc-commented API surface, writes a TDD plan, executes it task-by-task with implementer and reviewer subagents, runs a whole-branch integration review, verifies every declared build config separately, then lands commits, branch, session report, and follow-up Jira tickets. All builds and tests go through a serialized broker. Use when the user says "ship CHROMA2-107", "take this ticket end to end", or invokes /ship-ticket <TICKET-ID>.
+description: End-to-end orchestrator from a Jira ticket ID to a pushed, reviewed feature branch. Fans out parallel research, brainstorms a spec with a house-style doc-commented API surface, writes a TDD plan, executes it task-by-task with implementer and reviewer subagents, runs a whole-branch integration review, verifies every declared build config separately, then lands commits, branch, and follow-up Jira tickets. All builds and tests go through a serialized broker. Use when the user says "ship CHROMA2-107", "take this ticket end to end", or invokes /ship-ticket <TICKET-ID>.
 ---
 
 # ship-ticket
@@ -9,7 +9,7 @@ Takes a Jira ticket ID and drives it to a pushed, reviewed feature branch.
 
 This is a composition, not a reimplementation. Each stage delegates to the skill that already owns
 that job: `/brainstorm` for the spec, `/write-plan` for the plan, `/subagent-dev` for execution,
-`/wyvrn-verify` for the suite, `/push-report` for the session report. This file owns the sequencing,
+`/wyvrn-verify` for the suite. This file owns the sequencing,
 the checkpoints, and the rules that bind across stages.
 
 ## The pipeline
@@ -41,14 +41,10 @@ These bind every stage and override any stage-local convenience.
    squash of existing commits, no rebase, no `commit --amend`, no `reset --hard`, no force-push, no
    `.gitignore` edit, no `git rm --cached`. Ask, naming the exact command and target, and get an
    explicit yes. Approval never carries over from an earlier turn (`gitflow.md` section 7).
-3. **"Push these" is ambiguous. Always ask which.** This pipeline produces two pushable things: the
-   feature branch and the session report. When the user says "push these", "push it", "push now", or
-   anything that does not name one unambiguously, ask whether they mean the branch, the report, or
-   both. Never infer. Never push both to be safe - pushing the branch is outward-facing and is not
-   undone by a follow-up message.
-4. **Never push anything unasked.** Stage 7 stops and reports; it does not push on its own initiative
-   even when every gate is green.
-5. **Adversarial honesty applies to the spec and the reviews** (`universal.md` section 3). If the
+3. **Never push anything unasked.** Stage 7 stops and reports; it does not push on its own initiative
+   even when every gate is green. Pushing the branch is outward-facing and is not undone by a
+   follow-up message.
+4. **Adversarial honesty applies to the spec and the reviews** (`universal.md` section 3). If the
    ticket's premise is wrong - the bug is not real, the fix belongs in another repo, the ticket
    describes a symptom of a different defect - say so at Stage 2 before writing a plan against it.
    A flawless implementation of the wrong ticket is a total loss.
@@ -176,13 +172,10 @@ time, say so and mark the result provisional.
 1. **Commit** anything uncommitted per `/wyvrn-commit` and `gitflow.md` section 3. Conventional
    format, single `-m`, no trailers.
 2. **Stop.** Report what is ready: the branch name, the commit SHAs, the verify results, the
-   descoped items. **Do not push.** Rules 3 and 4.
-3. **When the user asks to push, disambiguate first** (rule 3): the branch, the report, or both.
-4. On an explicit branch push: push and open the PR into the integration branch per `gitflow.md`
-   section 4.
-5. On an explicit report push: run `/push-report`, including the commit SHAs from this run so the
-   report is traceable to the code.
-6. **File follow-up Jira tickets** for everything descoped at Stage 2 or discovered during Stages
+   descoped items. **Do not push.** Rule 3.
+3. When the user explicitly asks to push: push and open the PR into the integration branch per
+   `gitflow.md` section 4.
+4. **File follow-up Jira tickets** for everything descoped at Stage 2 or discovered during Stages
    4-5. One ticket per item, linked to the original, carrying the evidence that motivated it. Ask
    before creating them - filing a ticket is outward-facing and visible to the team. List what you
    would file and let the user cut the list.
@@ -192,7 +185,7 @@ time, say so and mark the result provisional.
 - Never let a subagent invoke the project's build or test toolchain, or any wrapper around it.
 - Never run two toolchain invocations concurrently, combine configs, or background a build or test.
 - Never rewrite history or change file tracking without in-turn approval.
-- Never push the branch or the report without an explicit, disambiguated ask.
+- Never push the branch without an explicit ask.
 - Never proceed past Stage 2 without `approve`.
 - Never guess what `refine` meant when no text accompanied it.
 - Never write the plan before the spec is approved, or code before the plan exists.
@@ -204,7 +197,7 @@ time, say so and mark the result provisional.
 ## Integration
 
 - `/worktree` - Stage 0. `/brainstorm` - Stage 2. `/write-plan` - Stage 3. `/subagent-dev` - Stages 4-5.
-  `/wyvrn-verify` - Stage 6. `/push-report` and `/wyvrn-commit` - Stage 7.
+  `/wyvrn-verify` - Stage 6. `/wyvrn-commit` - Stage 7.
 - `gitflow.md` sections 2, 3, 4, 7 - ticket-driven branch naming, commit format, PR flow, and the
   history/tracking gate.
 - `.claude-wyvrn-local/PROJECT.md` - repo map, worktree layout, `build-command` / `test-command` /

@@ -119,7 +119,10 @@ concurrency in general.
   ```
 
   A non-empty sweep means a prior run did not exit cleanly — say so, and do not trust results that
-  predate it.
+  predate it. If the build-lock hook refuses this command (BLOCKED), a listed process is live and
+  the sweep cannot run in-session — the hook blocks every Bash and PowerShell call, this one
+  included. Stop and ask the user to sweep from a terminal outside Claude Code
+  (`Get-Process <listed names> | Stop-Process -Force`), then retry.
 - Confirm the working directory is the repo root before every build or test command. Shell state
   does not persist between tool calls; print it rather than assume it.
 - Never background a build or test. A backgrounded run is an invocation you have lost track of,
@@ -193,7 +196,7 @@ Dispatch every implementer via `implementer-prompt.md`, passing the brief **path
 
 For every returned task, before accepting it:
 
-1. **Task review.** Run `review-package BASE HEAD` (BASE = the task's recorded base, HEAD = its tip) and dispatch a task-reviewer subagent via `task-reviewer-prompt.md`, passing the brief, report, and review-package paths plus the binding constraints. The reviewer reads the diff and gates spec compliance + code quality. Reviewers never invoke the toolchain (*Build Lock*); the test evidence is the orchestrator's own RED and GREEN output from the task's focused target, which you pass to the reviewer.
+1. **Task review.** Run `review-package BASE HEAD` (BASE = the task's recorded base, HEAD = its tip) and dispatch a task-reviewer subagent via `task-reviewer-prompt.md`, passing the brief, report, and review-package paths plus the binding constraints. The reviewer reads the diff and gates spec compliance + code quality. Reviewers never invoke the toolchain (*Build Lock*); the test evidence is the orchestrator's own RED and GREEN output from the task's focused target, which you pass to the reviewer in the template's `[TEST_EVIDENCE]` slot.
 2. **Resolve.** Dispatch a fix subagent for Critical/Important findings, then re-review; never accept on the report alone. Log Minor findings to the ledger for the final review. When spec ✅ and quality approved, append the task to the ledger and flip the task's `- [ ]` steps to `- [x]` in the plan file.
 
 ## Handling implementer status
@@ -225,7 +228,7 @@ The task reviewer may report "⚠️ Cannot verify from diff" items — requirem
 Per-task reviews are task-scoped gates. The broad review happens once, at the final whole-branch review. When you fill a reviewer template:
 
 - Do not add open-ended directives like "check all uses" or "run race tests if useful" without a concrete, task-specific reason.
-- Never ask a reviewer to run tests or a build. Reviewers are bound by the *Build Lock*. Hand it the orchestrator's RED/GREEN output as evidence instead.
+- Never ask a reviewer to run tests or a build. Reviewers are bound by the *Build Lock*. Hand it the orchestrator's RED/GREEN output as evidence instead, in the template's `[TEST_EVIDENCE]` slot.
 - Do not pre-judge findings for the reviewer — never instruct it to ignore or not flag a specific issue. If you believe a finding would be a false positive, let the reviewer raise it and adjudicate it in the review loop. If the prompt you are writing contains "do not flag," "don't treat X as a defect," "at most Minor," or "the plan chose" — stop: you are pre-judging.
 - The binding-constraints block you hand the reviewer is its attention lens. Copy the binding requirements verbatim from the plan header (exact build/test commands from Tech Stack, invariants from Architecture, the Global Constraints section) and the spec: exact values, exact formats, and stated relationships between components ("same layout as X", "matches Y"). The reviewer template already carries the process rules (YAGNI, test hygiene, review method) — the constraints block is for what THIS project's spec demands.
 - Hand the reviewer its diff as a file: run `review-package BASE HEAD` and pass the printed path. The output never enters your own context, and the reviewer sees the commit list, stat summary, and full diff with context in one Read call. Use the BASE you recorded before dispatching — never `HEAD~1`.

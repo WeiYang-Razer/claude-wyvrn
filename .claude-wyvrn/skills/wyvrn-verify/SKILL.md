@@ -82,6 +82,11 @@ the acceptance criteria. Run this first, then that.
    Report what was killed. A non-empty sweep is a signal: a previous run did not exit cleanly,
    and its results should not be trusted.
 
+   If the build-lock hook refuses this command (BLOCKED), a listed process is live and the sweep
+   cannot run in-session -- the hook blocks every Bash and PowerShell call, this one included.
+   Stop and ask the user to sweep from a terminal outside Claude Code
+   (`Get-Process <listed names> | Stop-Process -Force`), then retry this step.
+
 4. **Build each declared config, one invocation per config, strictly sequential.** Run
    `build-command` with the first config, wait for it to exit, capture the exit code; then the
    next config. Never a combined-config flag, never two builds at once.
