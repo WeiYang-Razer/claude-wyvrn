@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Wyvrn harness v2.5.0.
+Wyvrn harness v2.6.0.
 
 ## Trigger /flow when
 
@@ -56,9 +56,12 @@ Binds every response, including read-only ones outside /flow. Never rewrite git 
 
 ## Build lock hook
 
-The harness assumes a `PreToolUse` hook that refuses a Bash or PowerShell tool call while any
-process named in `.claude-wyvrn-local/build-lock-processes` is alive (plain text, one process name
-per line, declared per project; a project without the file is never blocked). If
+The harness assumes a `PreToolUse` hook that refuses a Bash or PowerShell tool call while a
+process named in `.claude-wyvrn-local/build-lock-processes` is alive **and belongs to this project**
+(plain text, one process name per line, declared per project; a project without the file is never
+blocked). Ownership is decided by session ancestry, or by the project root appearing in the command
+line of the process or one of its ancestors -- another repository's `cmake` or `ctest` does not block
+this one. Sweep stale processes with `build-lock.ps1 -Sweep`, which spares other repositories' runs. If
 `~/.claude/settings.json` has no `hooks.PreToolUse` entry, tell the user once that the build lock is
 unenforced and offer to merge `~/.claude-wyvrn/templates/settings.hooks.json` into their global
 settings. Offer; never install it silently, and never overwrite the file (it also holds their

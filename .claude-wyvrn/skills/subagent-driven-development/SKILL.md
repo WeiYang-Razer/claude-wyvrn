@@ -114,15 +114,16 @@ concurrency in general.
   `.claude-wyvrn-local/build-lock-processes` (one per line):
 
   ```powershell
-  $n = @(Get-Content .claude-wyvrn-local/build-lock-processes -ErrorAction SilentlyContinue | Where-Object { $_.Trim() })
-  if ($n) { Get-Process -Name $n -ErrorAction SilentlyContinue | Stop-Process -Force }
+  powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME/.claude-wyvrn/templates/build-lock.ps1" -Sweep
   ```
 
-  A non-empty sweep means a prior run did not exit cleanly — say so, and do not trust results that
-  predate it. If the build-lock hook refuses this command (BLOCKED), a listed process is live and
-  the sweep cannot run in-session — the hook blocks every Bash and PowerShell call, this one
-  included. Stop and ask the user to sweep from a terminal outside Claude Code
-  (`Get-Process <listed names> | Stop-Process -Force`), then retry.
+  The sweep is scoped to this project: it kills only processes this session started or whose command
+  line carries this repository's path, and reports what it left alone. A non-empty sweep means a prior
+  run did not exit cleanly — say so, and do not trust results that predate it. If the build-lock hook
+  refuses this command (BLOCKED), one of *this project's* listed processes is live and the sweep cannot
+  run in-session — the hook blocks every Bash and PowerShell call, this one included. Another
+  repository's build will not cause this. Stop and ask the user to run the same command from a terminal
+  outside Claude Code, adding `-ProjectDir <repo root>`, then retry.
 - Confirm the working directory is the repo root before every build or test command. Shell state
   does not persist between tool calls; print it rather than assume it.
 - Never background a build or test. A backgrounded run is an invocation you have lost track of,

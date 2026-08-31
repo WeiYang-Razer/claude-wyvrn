@@ -1,6 +1,6 @@
 ---
 name: wyvrn-verify
-description: Crash-safe full-suite verification run. Confirms the working directory, sweeps the stale build/test processes named in .claude-wyvrn-local/build-lock-processes, builds every declared config as separate sequential invocations, runs the test suite serially with exact pass/fail counts, and states explicitly whether anything is still running at report time. Use when the user asks to verify, run the full suite, build and test, or invokes /wyvrn-verify. Never runs builds or tests concurrently -- parallel runs have hard-crashed development machines.
+description: Crash-safe full-suite verification run. Confirms the working directory, sweeps this project's stale build/test processes named in .claude-wyvrn-local/build-lock-processes, builds every declared config as separate sequential invocations, runs the test suite serially with exact pass/fail counts, and states explicitly whether anything is still running at report time. Use when the user asks to verify, run the full suite, build and test, or invokes /wyvrn-verify. Never runs builds or tests concurrently -- parallel runs have hard-crashed development machines.
 ---
 
 # wyvrn-verify
@@ -75,17 +75,20 @@ the acceptance criteria. Run this first, then that.
 3. **Sweep stale processes.** Kill orphans left by prior runs before starting:
 
    ```powershell
-   $n = @(Get-Content .claude-wyvrn-local/build-lock-processes | Where-Object { $_.Trim() })
-   if ($n) { Get-Process -Name $n -ErrorAction SilentlyContinue | Stop-Process -Force }
+   powershell -NoProfile -ExecutionPolicy Bypass -File "$HOME/.claude-wyvrn/templates/build-lock.ps1" -Sweep
    ```
 
-   Report what was killed. A non-empty sweep is a signal: a previous run did not exit cleanly,
-   and its results should not be trusted.
+   The sweep is scoped to this project: it kills only processes this session started or whose
+   command line carries this repository's path, and it prints both what it killed and what it left
+   alone. Report both. A non-empty sweep is a signal: a previous run did not exit cleanly, and its
+   results should not be trusted. Processes reported as left alone belong to other repositories --
+   do not chase them, and never widen the sweep to cover them.
 
-   If the build-lock hook refuses this command (BLOCKED), a listed process is live and the sweep
-   cannot run in-session -- the hook blocks every Bash and PowerShell call, this one included.
-   Stop and ask the user to sweep from a terminal outside Claude Code
-   (`Get-Process <listed names> | Stop-Process -Force`), then retry this step.
+   If the build-lock hook refuses this command (BLOCKED), one of *this project's* listed processes
+   is live and the sweep cannot run in-session -- the hook blocks every Bash and PowerShell call,
+   this one included. Another repository's build will not cause this. Stop and ask the user to run
+   the same command from a terminal outside Claude Code, adding `-ProjectDir <repo root>`, then
+   retry this step.
 
 4. **Build each declared config, one invocation per config, strictly sequential.** Run
    `build-command` with the first config, wait for it to exit, capture the exit code; then the
@@ -140,7 +143,9 @@ Still running:  <nothing | what, and why it could not be stopped>
 
 - `.claude-wyvrn-local/PROJECT.md` -- `build-command`, `test-command`, `build-configs`.
 - `.claude-wyvrn-local/build-lock-processes` -- the sweep list, shared with the build-lock hook
-  (`~/.claude-wyvrn/templates/settings.hooks.json`).
+  (`~/.claude-wyvrn/templates/settings.hooks.json`). The hook and the sweep are the same script
+  (`~/.claude-wyvrn/templates/build-lock.ps1`), and both are scoped to this project: another
+  repository's `cmake` or `ctest` neither blocks this session nor gets swept by it.
 - Stack conventions (e.g. `cpp.md` *Testing*) may add stack-specific test style rules; this
   skill is the stack-agnostic runner, and its serial-execution rules override any convenience
   flag a stack file suggests (e.g. a `--parallel` runner default).

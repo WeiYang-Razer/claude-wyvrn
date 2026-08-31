@@ -33,8 +33,9 @@ These bind every stage and override any stage-local convenience.
    toolchain - the `build-command` / `test-command` declared in `.claude-wyvrn-local/PROJECT.md` -
    or any wrapper around it (build scripts, IDE tasks). No subagent ever does, at any stage, for
    any reason. One invocation in flight at a time, one config per invocation, sequential, after
-   sweeping the stale processes named in `.claude-wyvrn-local/build-lock-processes`. Concurrent
-   runs have hard-crashed development machines. Full rule: `subagent-dev` *Build Lock*.
+   sweeping this project's stale processes named in `.claude-wyvrn-local/build-lock-processes`
+   (`build-lock.ps1 -Sweep`, which spares other repositories' runs). Concurrent runs have
+   hard-crashed development machines. Full rule: `subagent-dev` *Build Lock*.
    Subagents may still Read, Grep, Glob, and Edit in parallel freely - the lock is on the toolchain,
    not on concurrency.
 2. **Never rewrite git history or change file tracking without asking in the current turn.** No
